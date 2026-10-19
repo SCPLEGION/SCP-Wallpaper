@@ -68,3 +68,7 @@ To show it in a scene preset, add its id to that scene's `preset.on`.
 * Comments say *why*; keep scene/widget files short and self-contained.
 * No globals beyond what the load-order table lists, except a scene's/widget's own helper constants at the top of its file.
 * Polish for user-visible text (it is the UI language), English for code and docs.
+
+## Curved widget layout
+
+A scene with `curved: true` (Dashboard) sets `this.geo = {cx, cy, Rc}` every tick. `curveWidgets()` in `js/app/dashboard.js` then shifts each row of the widgets left/right of the centre so they follow that circle (`body.curved` CSS removes the boxes). Horizontal drag of a side widget therefore only changes its side; vertical position and size still matter.

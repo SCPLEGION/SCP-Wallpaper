@@ -112,3 +112,13 @@
   body.hud .bar i b.hot, body.hud .sb i.hot { background: #ff7a59; box-shadow: 0 0 8px #ff7a59; }
   body.hud .cal-g span.today { box-shadow: 0 0 14px var(--accent); }
   body.hud .bar span, body.hud .srow, body.hud .cal-h { letter-spacing: .12em; }
+
+  /* Curved HUD (scene.curved): no boxes, text hugs the rails drawn around the globe (see curveWidgets in app/dashboard.js) */
+  body.curved .w:not(.reactorw) { background: none; border: 0; box-shadow: none; backdrop-filter: none; padding: 0; }
+  body.curved .w::before { display: none; }
+  body.curved:not(.editing) .w::after { display: none; }
+  body.curved .w.side-l .wc { text-align: right; }
+  body.curved .w.side-l .cal-h { text-align: right; }
+  body.curved .w .bar i, body.curved .w .sb { height: 1px; }
+  body.curved .w .srow, body.curved .w .bar span, body.curved .w .cal-h { color: rgba(220,245,255,.55); }
+  body.curved .w .spark { display: none; }

@@ -3,27 +3,15 @@
 
 // 15. Dashboard: Jarvis command centre
 SCENES.push({
-  name: 'Dashboard', accent: '#4fe3ff', hud: true, swatch: 'radial-gradient(circle at 50% 50%,#2fb7d8 0 22%,#0b3a4a 23% 40%,#02090e 41%)',
-  preset: { on: ['reactor', 'system', 'claude', 'calendar', 'progress'], layout: {
-    reactor: { x: .025, y: .09, s: .58 }, system: { x: .03, y: .44, s: .82 }, claude: { x: .77, y: .40, s: .85 }, calendar: { x: .80, y: .10, s: .9 }, progress: { x: .76, y: .66, s: .85 } } },
+  name: 'Dashboard', accent: '#4fe3ff', hud: true, curved: true, swatch: 'radial-gradient(circle at 50% 50%,#2fb7d8 0 22%,#0b3a4a 23% 40%,#02090e 41%)',
+  preset: { on: ['clock', 'system', 'claude', 'calendar', 'progress'], layout: {
+    clock: { x: .455, y: .925, s: .3 }, system: { x: .04, y: .30, s: .8 }, claude: { x: .04, y: .70, s: .8 }, calendar: { x: .78, y: .20, s: .8 }, progress: { x: .78, y: .60, s: .8 } } },
   mount(seed){
     this.seed = seed;
-    const r = rng(seed), C = '#4fe3ff';
-    let s = `<defs><pattern id="jgr" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="${C}" stroke-opacity=".04"/></pattern>
-      <linearGradient id="jsc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C}" stop-opacity="0"/><stop offset=".5" stop-color="${C}" stop-opacity=".07"/><stop offset="1" stop-color="${C}" stop-opacity="0"/></linearGradient>
-      <style>.hs{animation:hscan 9s linear infinite}@keyframes hscan{from{transform:translateY(-140px)}to{transform:translateY(${H}px)}}.hb{animation:hb 1.6s steps(2) infinite}@keyframes hb{50%{opacity:.15}}.hf{animation:hf 3.4s ease-in-out infinite}@keyframes hf{0%,100%{opacity:.2}50%{opacity:.7}}</style></defs>
-      <rect width="${W}" height="${H}" fill="url(#jgr)"/>
-      <g fill="none" stroke="${C}" stroke-width="3" stroke-opacity=".85"><path d="M30 130V30H130M${W - 30} 130V30H${W - 130}M30 ${H - 130}V${H - 30}H130M${W - 30} ${H - 130}V${H - 30}H${W - 130}"/></g>
-      <g stroke="${C}" stroke-opacity=".35"><path d="M150 62H${W - 150}"/>`;
-    for (let x = 150; x <= W - 150; x += 20) s += `<path d="M${x} 62v${x % 100 === 50 ? 12 : 6}"/>`;
-    s += `<path d="M150 838H${W - 150}"/>`;
-    for (let x = 150; x <= W - 150; x += 20) s += `<path d="M${x} 838v${x % 100 === 50 ? -12 : -6}"/>`;
-    for (let y = 170; y <= H - 170; y += 20){ const L = (y - 170) % 100 === 0 ? 14 : 7; s += `<path d="M30 ${y}h${L}M${W - 30} ${y}h${-L}"/>`; }
-    s += `</g><g font-family="monospace" fill="${C}"><text x="150" y="46" font-size="13" letter-spacing="6" fill-opacity=".85">SCP · COMMAND CENTER</text>
-      <text x="${W - 150}" y="46" font-size="12" letter-spacing="5" text-anchor="end" fill-opacity=".75">SYS ONLINE</text><circle class="hb" cx="${W - 138}" cy="41" r="4"/>`;
-    for (let i = 0; i < 6; i++) s += `<text class="hf" x="${520 + i * 112}" y="46" font-size="11" fill-opacity=".8" style="animation-delay:-${f1(r() * 3.4)}s">0x${Math.floor(r() * 65536).toString(16).toUpperCase().padStart(4, '0')}</text>`;
-    for (let x = 250; x <= W - 250; x += 200) s += `<text x="${x}" y="${H - 12}" font-size="10" fill-opacity=".4" text-anchor="middle">${String(Math.round((x - 150) / 20)).padStart(3, '0')}</text>`;
-    s += `</g><rect class="hs" width="${W}" height="140" fill="url(#jsc)"/>`;
+    const C = '#4fe3ff';
+    const s = `<g font-family="monospace" fill="${C}"><text x="60" y="64" font-size="12" letter-spacing="7" fill-opacity=".6">SCP</text>
+      <text x="${W - 60}" y="64" font-size="11" letter-spacing="5" text-anchor="end" fill-opacity=".45">ONLINE</text><circle class="hb" cx="${W - 150}" cy="60" r="3" fill="${C}"/></g>
+      <style>.hb{animation:hb 1.6s steps(2) infinite}@keyframes hb{50%{opacity:.15}}</style>`;
     return '<canvas id="cv"></canvas>' + svg(s);
   },
   after(){
@@ -54,7 +42,7 @@ SCENES.push({
     }
     const nc = this.cities.length, ARC = 26;
     this.arcs = [];
-    for (let k = 0; k < 11; k++){
+    for (let k = 0; k < 6; k++){
       const a = this.cities[k % nc], b = this.cities[(k * 5 + 3) % nc]; if (a === b) continue;
       const dot = Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y + a.z * b.z)), om = Math.acos(dot), so = Math.sin(om) || 1, pts = [];
       for (let i = 0; i <= ARC; i++){
@@ -63,7 +51,7 @@ SCENES.push({
       }
       this.arcs.push({ pts, sp: .12 + r() * .12, ph: r() });
     }
-    this.orbits = [[1.32, .9, 0, 22, 1], [1.55, 1.9, 2.2, 31, -1], [1.8, .35, 4.1, 44, 1]].map(([rr, inc, node, per, dir], i) => ({ rr, inc, node, per, dir, sats: 1 + (i === 2 ? 2 : 0), ph: r() * 6.28 }));
+    this.orbits = [[1.3, .9, 0, 28, 1]].map(([rr, inc, node, per, dir]) => ({ rr, inc, node, per, dir, sats: 1, ph: r() * 6.28 }));
     this.tilt = .38; this.lvl = 0; this.run = true; this.live = false;
     const poll = () => {
       if (!this.run) return;
@@ -88,16 +76,12 @@ SCENES.push({
     g.setTransform(1, 0, 0, 1, 0, 0);
     const bg = g.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * .75); bg.addColorStop(0, '#06303f'); bg.addColorStop(.45, '#021019'); bg.addColorStop(1, '#010508');
     g.fillStyle = bg; g.fillRect(0, 0, w, h);
-    // far hex-ish ring field behind the globe
-    g.lineWidth = 1;
-    for (let i = 0; i < 5; i++){ g.strokeStyle = `rgba(${A},${.06 + (i === 3 ? .06 : 0)})`; g.setLineDash(i % 2 ? [2, 12] : [1, 5]); g.beginPath(); g.arc(cx, cy, Rg * (1.9 + i * .28), 0, 6.2832); g.stroke(); }
-    g.setLineDash([]);
     // orbit rings (back halves first: the globe disc then hides them)
     const orbitPt = (o, a) => { const x0 = Math.cos(a), z0 = Math.sin(a), y1 = -z0 * Math.sin(o.inc), z1 = z0 * Math.cos(o.inc), co = Math.cos(o.node), so = Math.sin(o.node); return Tilt(x0 * co + z1 * so, y1, -x0 * so + z1 * co, o.rr); };
     const drawOrbits = front => {
       for (const o of this.orbits){
         let prev = orbitPt(o, 0);
-        for (let i = 1; i <= 90; i++){ const p = orbitPt(o, i / 90 * 6.2832); if ((p[2] >= 0) === front){ g.strokeStyle = `rgba(${A},${front ? .5 : .22})`; g.beginPath(); g.moveTo(prev[0], prev[1]); g.lineTo(p[0], p[1]); g.stroke(); } prev = p; }
+        for (let i = 1; i <= 90; i++){ const p = orbitPt(o, i / 90 * 6.2832); if ((p[2] >= 0) === front){ g.strokeStyle = `rgba(${A},${front ? .32 : .12})`; g.beginPath(); g.moveTo(prev[0], prev[1]); g.lineTo(p[0], p[1]); g.stroke(); } prev = p; }
         for (let k = 0; k < o.sats; k++){
           const a = o.ph + o.dir * t * 6.2832 / o.per + k * 3.1, p = orbitPt(o, a); if ((p[2] >= 0) !== front) continue;
           const tail = orbitPt(o, a - o.dir * .22); const gr = g.createLinearGradient(tail[0], tail[1], p[0], p[1]); gr.addColorStop(0, `rgba(${A},0)`); gr.addColorStop(1, `rgba(${A},.9)`);
@@ -115,8 +99,8 @@ SCENES.push({
     g.fillStyle = ocean; g.beginPath(); g.arc(cx, cy, Rg, 0, 6.2832); g.fill();
     // graticule
     const line = (fn, n, a0, a1) => { let prev = fn(0); for (let i = 1; i <= n; i++){ const p = fn(i / n); if (p[2] > 0 && prev[2] > 0){ g.strokeStyle = `rgba(${A},${a1})`; g.beginPath(); g.moveTo(prev[0], prev[1]); g.lineTo(p[0], p[1]); g.stroke(); } prev = p; } };
-    for (let lo = 0; lo < 360; lo += 15) line(u => { const la = -1.5708 + u * 3.1416, lo2 = rad(lo); return V(Math.cos(la) * Math.sin(lo2), Math.sin(la), Math.cos(la) * Math.cos(lo2)); }, 36, 0, .09);
-    for (let la = -75; la <= 75; la += 15) line(u => { const l = rad(la), o = u * 6.2832; return V(Math.cos(l) * Math.sin(o), Math.sin(l), Math.cos(l) * Math.cos(o)); }, 72, 0, la === 0 ? .24 : .09);
+    for (let lo = 0; lo < 360; lo += 15) line(u => { const la = -1.5708 + u * 3.1416, lo2 = rad(lo); return V(Math.cos(la) * Math.sin(lo2), Math.sin(la), Math.cos(la) * Math.cos(lo2)); }, 36, 0, .05);
+    for (let la = -75; la <= 75; la += 15) line(u => { const l = rad(la), o = u * 6.2832; return V(Math.cos(l) * Math.sin(o), Math.sin(l), Math.cos(l) * Math.cos(o)); }, 72, 0, la === 0 ? .12 : .05);
     // continents: lit dots, scanner highlight (a latitude band sweeping the globe)
     const ys = Math.sin(t * .33) * .92;
     for (const p of this.land){
@@ -129,7 +113,7 @@ SCENES.push({
     // data arcs with travelling packets
     for (const a of this.arcs){
       const P = a.pts.map(q => V(q[0], q[1], q[2]));
-      g.strokeStyle = `rgba(${A},.5)`; g.beginPath(); let pen = false;
+      g.strokeStyle = `rgba(${A},.4)`; let pen=false; g.beginPath(); pen = false;
       for (const p of P){ if (p[2] < -.05){ pen = false; continue; } pen ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); pen = true; } g.stroke();
       const u = (t * a.sp + a.ph) % 1, i = Math.floor(u * (P.length - 1)), p = P[i];
       if (p[2] > 0){ const gl = g.createRadialGradient(p[0], p[1], 0, p[0], p[1], 9); gl.addColorStop(0, 'rgba(235,254,255,.95)'); gl.addColorStop(1, `rgba(${A},0)`); g.fillStyle = gl; g.beginPath(); g.arc(p[0], p[1], 9, 0, 6.2832); g.fill(); }
@@ -144,25 +128,24 @@ SCENES.push({
       if (q[2] > bz){ bz = q[2]; best = [x, y, c]; }
     }
     if (best){
-      const [x, y, c] = best, lat = Math.asin(c.y) * 57.3, lon = Math.atan2(c.x, c.z) * 57.3, ex = cx + Rg * 1.55, ey = y - Rg * .32;
+      const [x, y, c] = best, lat = Math.asin(c.y) * 57.3, lon = Math.atan2(c.x, c.z) * 57.3, ex = cx + Rg * 1.14, ey = y - Rg * .32;
       g.strokeStyle = `rgba(${A},.85)`; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 24, ey); g.lineTo(ex, ey); g.stroke(); g.strokeRect(x - 9, y - 9, 18, 18);
-      g.fillStyle = `rgba(${A},.9)`; g.font = '13px monospace'; g.fillText(c.code, ex + 8, ey - 6);
-      g.font = '11px monospace'; g.fillStyle = `rgba(${A},.65)`; g.fillText(`${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'}  ${Math.abs(lon).toFixed(2)}°${lon >= 0 ? 'E' : 'W'}`, ex + 8, ey + 10);
-      g.fillText(`LINK ${(60 + (c.ph * 37 | 0) % 39)}% · ${(8 + (c.ph * 91 | 0) % 40)} ms`, ex + 8, ey + 25);
+      g.fillStyle = `rgba(${A},.9)`; g.font = '13px monospace'; g.fillText(c.code, ex + 8, ey - 7);
     }
     // limb highlight + terminator shade
     const sh = g.createRadialGradient(cx - Rg * .45, cy - Rg * .5, Rg * .2, cx + Rg * .25, cy + Rg * .3, Rg * 1.15); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(1,6,10,.32)');
     g.fillStyle = sh; g.beginPath(); g.arc(cx, cy, Rg, 0, 6.2832); g.fill();
     g.strokeStyle = `rgba(${A},.75)`; g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy, Rg, 0, 6.2832); g.stroke(); g.lineWidth = 1;
     drawOrbits(true);
-    // targeting reticle
-    const ring = (k, segs, len, sp, wd, al) => { g.strokeStyle = `rgba(${A},${al})`; g.lineWidth = wd; for (let i = 0; i < segs; i++){ const a0 = t * sp + i * 6.2832 / segs; g.beginPath(); g.arc(cx, cy, Rg * k, a0, a0 + len); g.stroke(); } g.lineWidth = 1; };
-    ring(1.14, 4, .9, .25, 2, .6); ring(1.2, 12, .16, -.4, 1.5, .55); ring(1.07, 36, .05, .08, 4, .35);
-    for (let i = 0; i < 120; i++){ const a = i / 120 * 6.2832 - t * .05, L = i % 10 ? 5 : 12, c = Math.cos(a), s = Math.sin(a); g.strokeStyle = `rgba(${A},${i % 10 ? .25 : .55})`; g.beginPath(); g.moveTo(cx + Rg * 1.28 * c, cy + Rg * 1.28 * s); g.lineTo(cx + (Rg * 1.28 + L) * c, cy + (Rg * 1.28 + L) * s); g.stroke(); }
-    g.strokeStyle = `rgba(${A},.45)`; for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ const x = cx + sx * Rg * 1.62, y = cy + sy * Rg * 1.62, L = 26; g.beginPath(); g.moveTo(x, y - sy * L); g.lineTo(x, y); g.lineTo(x - sx * L, y); g.stroke(); }
-    g.font = '11px monospace'; g.fillStyle = `rgba(${A},.7)`; g.textAlign = 'center';
-    g.fillText(`ROT ${((rot * 57.3) % 360).toFixed(1).padStart(5, '0')}°   TILT ${(ti * 57.3).toFixed(0)}°   SCAN LAT ${(sl * 57.3).toFixed(1)}°`, cx, cy + Rg * 1.62 + 28);
-    g.fillText(this.live ? `AUDIO LINK  ${'▮'.repeat(Math.round(pulse * 10)).padEnd(10, '▯')}` : 'AUDIO LINK  OFFLINE', cx, cy + Rg * 1.62 + 46);
+    // thin limb ring + the two rails the widgets hug (Rc), drawn as tick arcs
+    g.strokeStyle = `rgba(${A},.22)`; g.beginPath(); g.arc(cx, cy, Rg * 1.07, 0, 6.2832); g.stroke();
+    const Rc = Rg * 1.5; this.geo = { cx, cy, Rc };
+    for (const side of [-1, 1]){
+      const mid = side < 0 ? Math.PI : 0, span = .62;
+      g.strokeStyle = `rgba(${A},.55)`; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, Rc, mid - span, mid + span); g.stroke(); g.lineWidth = 1;
+      g.strokeStyle = `rgba(${A},.25)`; g.beginPath(); g.arc(cx, cy, Rc + 9, mid - span - .05, mid + span + .05); g.stroke();
+      for (let i = -24; i <= 24; i++){ const a = mid + i * span / 24, L = i % 6 ? 4 : 9, c = Math.cos(a), sn = Math.sin(a); g.strokeStyle = `rgba(${A},${i % 6 ? .25 : .5})`; g.beginPath(); g.moveTo(cx + (Rc + 9) * c, cy + (Rc + 9) * sn); g.lineTo(cx + (Rc + 9 + L) * c, cy + (Rc + 9 + L) * sn); g.stroke(); }
+    }
     g.textAlign = 'start';
   }
 });

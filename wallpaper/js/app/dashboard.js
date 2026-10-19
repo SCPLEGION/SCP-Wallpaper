@@ -31,6 +31,8 @@ function setOwn(on){
 }
 function onSceneChange(){
   document.body.classList.toggle('hud', !!(cur && cur.hud));
+  document.body.classList.toggle('curved', !!(cur && cur.curved));
+  if (!(cur && cur.curved)) uncurveWidgets();
   if (cur && cur.preset && !state.scSeen[cur.name]){ state.sc[cur.name] = makeCfg(cur, true); state.scSeen[cur.name] = true; save(); }
   const t = $('tOwn'); if (t) t.classList.toggle('on', !!(cur && state.sc[cur.name]));
   if (WIDGETS[0].box){ refreshWidgetToggles(); applyLook(); updateAll(); }
@@ -141,4 +143,31 @@ function initDash(){
   if (params.has('edit')) setEdit(true);
   updateAll(); setInterval(updateAll, 1000);
   loadUsage(); loadSys(); setInterval(loadUsage, 20000); setInterval(loadSys, 2000);
+}
+
+/* Curved layout: a scene with `curved: true` publishes its globe as cur.geo = {cx, cy, Rc}. Rows of every widget on the left/right of it are
+   shifted sideways so their inner edge follows the circle of radius Rc + CURVE_GAP; widgets near the centre are left alone. */
+const CURVE_GAP = 44;
+function curveRows(box){
+  const rows = [];
+  [...box.querySelector('.wc').children].forEach(c => { if (c.classList.contains('bars') || c.classList.contains('cal-g')) rows.push(...c.children); else rows.push(c); });
+  return rows;
+}
+function uncurveWidgets(){
+  WIDGETS.forEach(w => { if (!w.box) return; w.box.classList.remove('side-l', 'side-r'); curveRows(w.box).forEach(r => r.style.transform = ''); });
+}
+function curveWidgets(){
+  const geo = cur && cur.geo; if (!geo) return;
+  const R = geo.Rc + CURVE_GAP;
+  WIDGETS.forEach(w => {
+    if (!w.box || !isOn(w.id)) return;
+    const b = w.box, r = b.getBoundingClientRect(), k = r.width / b.offsetWidth || 1, mid = r.left + r.width / 2;
+    const side = Math.abs(mid - geo.cx) < innerWidth * .12 ? 0 : mid < geo.cx ? -1 : 1;
+    b.classList.toggle('side-l', side < 0); b.classList.toggle('side-r', side > 0);
+    curveRows(b).forEach(row => {
+      if (!side){ row.style.transform = ''; return; }
+      const dy = r.top + (row.offsetTop + row.offsetHeight / 2) * k - geo.cy, ax = Math.sqrt(Math.max(R * R - dy * dy, (R * .45) ** 2));
+      row.style.transform = `translateX(${((side < 0 ? geo.cx - ax - r.right : geo.cx + ax - r.left) / k).toFixed(1)}px)`;
+    });
+  });
 }
