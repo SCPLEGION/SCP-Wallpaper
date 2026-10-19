@@ -1,0 +1,11 @@
+[Unit]
+Description=Audio spectrum feed for the SCP wallpaper equalizer
+
+[Service]
+ExecStart=%h/.local/bin/scp-audioviz
+Restart=always
+RestartSec=3
+Nice=10
+
+[Install]
+WantedBy=default.target

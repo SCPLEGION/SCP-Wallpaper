@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+"""Write a small system-stats snapshot for the SCP wallpaper dashboard.
+
+Output: ~/.cache/scp-center/sysstats.json, rewritten atomically every INTERVAL
+seconds. Read-only: it only reads /proc and /sys and never touches the network.
+"""
+import glob
+import json
+import os
+import shutil
+import time
+
+INTERVAL = 2.0
+OUT = os.path.expanduser("~/.cache/scp-center/sysstats.json")
+MOUNTS = ["/", "/mnt/SSD", "/mnt/HDD"]
+
+
+def read(path, default=None):
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except OSError:
+        return default
+
+
+def hwmon(name):
+    for d in glob.glob("/sys/class/hwmon/hwmon*"):
+        if read(d + "/name") == name:
+            return d
+    return None
+
+
+def temp(dirpath, prefer_label=None):
+    if not dirpath:
+        return None
+    best = None
+    for f in sorted(glob.glob(dirpath + "/temp*_input")):
+        v = read(f)
+        if v is None:
+            continue
+        label = read(f.replace("_input", "_label"), "")
+        t = int(v) / 1000
+        if prefer_label and prefer_label in label:
+            return t
+        if best is None:
+            best = t
+    return best
+
+
+def cpu_times():
+    parts = read("/proc/stat", "cpu 0 0 0 0").splitlines()[0].split()[1:]
+    vals = list(map(int, parts))
+    return sum(vals), vals[3] + (vals[4] if len(vals) > 4 else 0)
+
+
+def default_iface():
+    for line in (read("/proc/net/route", "") or "").splitlines()[1:]:
+        f = line.split()
+        if len(f) > 1 and f[1] == "00000000":
+            return f[0]
+    return None
+
+
+def net_bytes(iface):
+    for line in (read("/proc/net/dev", "") or "").splitlines():
+        if line.strip().startswith(iface + ":"):
+            f = line.split(":", 1)[1].split()
+            return int(f[0]), int(f[8])
+    return None
+
+
+def meminfo():
+    m = {}
+    for line in (read("/proc/meminfo", "") or "").splitlines():
+        k, _, v = line.partition(":")
+        m[k] = int(v.split()[0]) * 1024
+    return m
+
+
+def main():
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    cpu_hw, gpu_hw = hwmon("coretemp") or hwmon("k10temp"), hwmon("amdgpu")
+    gpu_dev = next(iter(glob.glob("/sys/class/drm/card*/device/gpu_busy_percent")), None)
+    gpu_dev = os.path.dirname(gpu_dev) if gpu_dev else None
+    prev_cpu, prev_net, prev_t = cpu_times(), None, time.time()
+    iface = default_iface()
+    if iface:
+        prev_net = net_bytes(iface)
+    while True:
+        time.sleep(INTERVAL)
+        now = time.time()
+        tot, idle = cpu_times()
+        dt, di = tot - prev_cpu[0], idle - prev_cpu[1]
+        cpu = round(100 * (1 - di / dt), 1) if dt > 0 else 0.0
+        prev_cpu = (tot, idle)
+
+        mi = meminfo()
+        mem_total = mi.get("MemTotal", 0)
+        mem_used = mem_total - mi.get("MemAvailable", 0)
+
+        gpu = vram_used = vram_total = None
+        if gpu_dev:
+            v = read(gpu_dev + "/gpu_busy_percent")
+            gpu = int(v) if v is not None else None
+            vu, vt = read(gpu_dev + "/mem_info_vram_used"), read(gpu_dev + "/mem_info_vram_total")
+            vram_used, vram_total = (int(vu) if vu else None), (int(vt) if vt else None)
+
+        iface = default_iface() or iface
+        net = None
+        if iface:
+            cur = net_bytes(iface)
+            if cur and prev_net and now > prev_t:
+                net = {"iface": iface, "rx": max(0, (cur[0] - prev_net[0]) / (now - prev_t)),
+                       "tx": max(0, (cur[1] - prev_net[1]) / (now - prev_t))}
+            prev_net = cur
+        prev_t = now
+
+        disks = []
+        for m in MOUNTS:
+            if m == "/" or os.path.ismount(m):
+                try:
+                    u = shutil.disk_usage(m)
+                    disks.append({"mount": m, "used": u.used, "total": u.total})
+                except OSError:
+                    pass
+
+        snap = {
+            "t": int(now * 1000),
+            "cpu": cpu, "cpu_temp": temp(cpu_hw, "Package"),
+            "mem_used": mem_used, "mem_total": mem_total,
+            "gpu": gpu, "gpu_temp": temp(gpu_hw, "edge"), "vram_used": vram_used, "vram_total": vram_total,
+            "load": list(os.getloadavg()), "uptime": float((read("/proc/uptime", "0") or "0").split()[0]),
+            "net": net, "disks": disks,
+        }
+        tmp = OUT + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(snap, f)
+        os.replace(tmp, OUT)
+
+
+if __name__ == "__main__":
+    main()

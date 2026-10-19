@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCP Wallpaper</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/widgets.css">
+<link rel="stylesheet" href="css/menu.css">
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="dash" class="hidden"></div>
+<div id="editbar"><span>Tryb edycji · przeciągnij widżet · uchwyt w rogu lub kółko zmienia rozmiar</span><button class="btn" id="editdone">Gotowe</button></div>
+
+<button id="menubtn" title="Menu (M)" aria-label="Menu">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg>
+</button>
+<div id="menu">
+  <div class="tabs"><button class="tab" data-p="p1">Tapeta</button><button class="tab" data-p="p2">Dashboard</button></div>
+  <div class="pane" id="p1">
+    <h2>Sceny</h2>
+    <div class="grid" id="scenes"></div>
+    <h2>Opcje</h2>
+    <div class="row"><span>Zmiana automatyczna</span>
+      <select id="auto"><option value="0">wyłączona</option><option value="1">co 1 min</option><option value="5">co 5 min</option><option value="15">co 15 min</option><option value="60">co godzinę</option></select></div>
+    <div class="row"><span>Inny wariant sceny</span><button class="btn" id="reseed">Przetasuj</button></div>
+    <div class="hint"><kbd>klik</kbd> następna · <kbd>PPM</kbd> poprzednia · <kbd>M</kbd> menu · <kbd>D</kbd> dashboard · <kbd>E</kbd> edycja · <kbd>spacja</kbd> wariant</div>
+  </div>
+  <div class="pane" id="p2" hidden>
+    <div class="row"><span>Dashboard włączony</span><button class="sw-toggle" id="tDash" aria-label="Dashboard"></button></div>
+    <h2>Widżety</h2>
+    <div id="wlist"></div>
+    <h2>Zegar</h2>
+    <div class="row"><span>Format 24-godzinny</span><button class="sw-toggle" id="tH24" aria-label="24h"></button></div>
+    <div class="row"><span>Sekundy</span><button class="sw-toggle" id="tSecs" aria-label="Sekundy"></button></div>
+    <h2>Wygląd</h2>
+    <div class="row"><span>Rozmiar widżetów</span><input type="range" id="dsize" min="60" max="160" step="5"></div>
+    <div class="row"><span>Tło widżetów</span>
+      <select id="wbg"><option value="none">brak</option><option value="scrim">przyciemnienie</option><option value="glass">szkło</option></select></div>
+    <h2>Układ</h2>
+    <div class="row"><span>Przesuwanie i rozmiar widżetów</span><button class="sw-toggle" id="tEdit" aria-label="Edycja"></button></div>
+    <div class="row"><span>Własny układ tej sceny</span><button class="sw-toggle" id="tOwn" aria-label="Własny układ"></button></div>
+    <div class="row"><span>Domyślne położenia</span><button class="btn" id="resetLayout">Resetuj</button></div>
+    <h2>Zapisane układy</h2>
+    <div id="slots"></div>
+    <div class="hint">Klawisze <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> przełączają zapisane układy. W trybie edycji przeciągaj widżety myszą, a rozmiar zmieniasz uchwytem w prawym dolnym rogu albo kółkiem. Zmiany zapisują się same.</div>
+  </div>
+</div>
+
+<!-- Classic scripts, order matters (they share one global scope). See docs/ARCHITECTURE.md. -->
+<script src="js/core/config.js"></script>
+<script src="js/core/util.js"></script>
+<script src="js/core/draw.js"></script>
+<script src="js/core/xhr.js"></script>
+<script src="js/scenes/registry.js"></script>
+<script src="js/scenes/01-dusk.js"></script>
+<script src="js/scenes/02-moon.js"></script>
+<script src="js/scenes/03-waves.js"></script>
+<script src="js/scenes/04-topo.js"></script>
+<script src="js/scenes/05-orbits.js"></script>
+<script src="js/scenes/06-dots.js"></script>
+<script src="js/scenes/07-nebula.js"></script>
+<script src="js/scenes/08-reactor.js"></script>
+<script src="js/scenes/09-radar.js"></script>
+<script src="js/scenes/10-hexgrid.js"></script>
+<script src="js/scenes/11-datastream.js"></script>
+<script src="js/scenes/12-circuit.js"></script>
+<script src="js/scenes/13-globe.js"></script>
+<script src="js/scenes/14-equalizer.js"></script>
+<script src="js/scenes/15-dashboard.js"></script>
+<script src="js/app/state.js"></script>
+<script src="js/app/menu.js"></script>
+<script src="js/widgets/helpers.js"></script>
+<script src="js/widgets/registry.js"></script>
+<script src="js/data/sources.js"></script>
+<script src="js/widgets/01-clock.js"></script>
+<script src="js/widgets/02-reactor.js"></script>
+<script src="js/widgets/03-progress.js"></script>
+<script src="js/widgets/04-week.js"></script>
+<script src="js/widgets/05-claude.js"></script>
+<script src="js/widgets/06-system.js"></script>
+<script src="js/widgets/07-calendar.js"></script>
+<script src="js/widgets/08-pomo.js"></script>
+<script src="js/widgets/09-todo.js"></script>
+<script src="js/widgets/10-countdown.js"></script>
+<script src="js/app/dashboard.js"></script>
+<script src="js/app/main.js"></script>
+</body>
+</html>

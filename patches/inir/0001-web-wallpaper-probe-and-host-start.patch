@@ -1,0 +1,23 @@
+diff --git a/services/WebWallpaper.qml b/services/WebWallpaper.qml
+index 5edfdbba..8e388307 100644
+--- a/services/WebWallpaper.qml
++++ b/services/WebWallpaper.qml
+@@ -22,7 +22,8 @@ Singleton {
+     property int revision: 0
+ 
+     function refresh(): void {
+-        root.revision++
++        // Deferred so `active` has re-evaluated before the hosts read it.
++        Qt.callLater(() => root.revision++)
+     }
+ 
+     onRequestedChanged: refresh()
+@@ -33,7 +34,7 @@ Singleton {
+     Process {
+         id: runnerProbeProc
+         command: [
+-            "/usr/bin/bash", "-lc",
++            "/usr/bin/bash", "-c",
+             "command -v qml6 || command -v qml || { [ -x /usr/lib/qt6/bin/qml ] && printf '%s\\n' /usr/lib/qt6/bin/qml; }"
+         ]
+         stdout: StdioCollector { id: probeOut }

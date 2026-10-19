@@ -1,0 +1,59 @@
+# Architecture
+
+## The one constraint that shapes everything
+
+The page is loaded from `file://` by a QtWebEngine window. Chromium blocks ES modules (`type="module"`) on `file://`,
+so every JS file is a **classic script** and they all share one global scope. Consequences:
+
+* `index.html` lists the scripts explicitly and **order matters** (a file may only run top-level code that uses
+  things defined by files above it; function bodies can use anything, they run later).
+* Top-level `const`/`let`/`function` in one file are visible in all others. Pick unique names.
+* There is no build step. Edit a file, `scp-wallpaper reload`.
+* `scp-wallpaper check` fails if a `js/*.js` file exists but `index.html` does not load it (and vice versa).
+
+## Load order (see `wallpaper/index.html`)
+
+| # | Files | Defines |
+|---|---|---|
+| 1 | `core/config.js` | `W`, `H` (SVG canvas 1600×900), `PATHS` (data file URLs, home derived from the page URL) |
+| 2 | `core/util.js` | `$`, `stage`, `rng` (seeded), `hash1`, `vnoise`, `fbm1`, `f1`, `ridge`, `svg` |
+| 3 | `core/draw.js` | `cvInit` (canvas setup), `rad`, `arcPath`, `hexs` |
+| 4 | `core/xhr.js` | `xhr(url, cb)`: read a JSON file from disk |
+| 5 | `scenes/registry.js`, `scenes/NN-*.js` | `SCENES` (array; **file order = menu order**) |
+| 6 | `app/state.js` | `params` (URL hash), `state`, `save`, `cur`, `show(i, seed)`, `go(i, seed)` |
+| 7 | `app/menu.js` | menu panel, scene grid, global click/key handlers, auto-rotate |
+| 8 | `widgets/helpers.js` | `pad`, `esc`, `DAYS`, `MONTHS`, `isoWeek`, formatters, `spark`, `beep` |
+| 9 | `widgets/registry.js` | `WIDGETS` (array; **file order = menu order**) |
+| 10 | `data/sources.js` | `usage`, `sys`, `hist`, `loadUsage()`, `loadSys()` |
+| 11 | `widgets/NN-*.js` | one `WIDGETS.push({...})` each |
+| 12 | `app/dashboard.js` | per-scene layouts (`cfg`), placement, edit mode, saved layouts, `initDash()` |
+| 13 | `app/main.js` | 30 fps loop, boot: `initDash(); show(state.scene); armAuto();` |
+
+## Runtime flow
+
+1. `main.js` boots: `initDash()` builds one DOM box per widget (`.w` > `.wc` content + `.rz` handle), binds menu
+   controls, starts the 1 s widget update timer and the data loaders; then `show(state.scene)` mounts the scene.
+2. `show()` calls `scene.mount(seed)` (returns an HTML string put into `#stage`), `scene.after()`, and
+   `onSceneChange()`, which applies the scene's HUD skin and widget layout.
+3. The loop calls `scene.tick(t, dt)` at 30 fps for scenes that animate; static scenes cost nothing.
+4. Widgets update once a second (`update(now, el)`); data sources refresh on their own timers
+   (`sysstats` 2 s, `claude-usage` 20 s, `audio` ~33 ms while the Equalizer scene is on screen).
+
+## Data sources
+
+The page cannot see the system, so small producers write JSON under `~/.cache/scp-center/` and the page polls it
+(`file://` XHR works because iNiR's host sets `localContentCanAccessFileUrls`). Formats are in [STATE.md](STATE.md).
+
+| File | Producer | Notes |
+|---|---|---|
+| `sysstats.json` | `helpers/scp-sysstats` (`scp-sysstats.service`) | CPU/temps, RAM, GPU/VRAM, default-route NIC rates, mounts, load, uptime; 2 s |
+| `audio.json` | `helpers/scp-audioviz` (`scp-audioviz.service`) | `parec` on the default sink's *monitor*, FFT, 72 log bands, ~30 Hz; output only, never the mic, nothing is stored |
+| `claude-usage.json` | the claude-hud plugin (`display.externalUsageWritePath`) | only refreshed while a Claude Code session runs; the widget dims after 15 min |
+
+## iNiR integration
+
+iNiR (`services/WebWallpaper.qml`) starts one `WebWallpaperHost.qml` per screen when
+`background.backend.provider == "web"`, with `background.backend.web.source` pointing at `wallpaper/index.html`.
+Stock iNiR needs three fixes for this project, kept as patches in `patches/` (see its README): runner probe,
+host start race, per-screen placement + a persistent profile. The persistent profile is what makes `localStorage`
+(all saved state) survive a restart.

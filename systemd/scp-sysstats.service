@@ -1,0 +1,11 @@
+[Unit]
+Description=System stats snapshot for the SCP wallpaper dashboard
+
+[Service]
+ExecStart=%h/.local/bin/scp-sysstats
+Restart=always
+RestartSec=3
+Nice=10
+
+[Install]
+WantedBy=default.target

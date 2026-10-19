@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Spectrum analyser feed for the SCP wallpaper equalizer.
+
+Captures what the default output device is playing (its PipeWire/Pulse monitor
+source), runs an FFT and writes BANDS log-spaced levels (0..1) to
+~/.cache/scp-center/audio.json about 30 times a second.
+
+It only listens to the *output* monitor, never to a microphone, and keeps no
+audio: every block is reduced to the band levels and discarded.
+
+  scp-audioviz            run forever (what the systemd unit does)
+  scp-audioviz --selftest synthetic-tone check of the FFT/band mapping
+"""
+import json
+import os
+import subprocess
+import sys
+import time
+
+import numpy as np
+
+RATE = 44100
+N = 4096                    # FFT window (~93 ms)
+FPS = 30
+HOP = RATE // FPS           # new samples per frame
+BANDS = 72
+FMIN, FMAX = 40.0, 16000.0
+OUT = os.path.expanduser("~/.cache/scp-center/audio.json")
+
+FREQS = np.fft.rfftfreq(N, 1.0 / RATE)
+EDGES = np.geomspace(FMIN, FMAX, BANDS + 1)
+LO = np.searchsorted(FREQS, EDGES[:-1])
+HI = np.maximum(LO + 1, np.searchsorted(FREQS, EDGES[1:]))
+CENTERS = np.sqrt(EDGES[:-1] * EDGES[1:])
+# Gentle tilt (pivot 500 Hz) so treble stays visible next to bass without burying the lows.
+TILT = 3.0 * np.log2(CENTERS / 500.0)
+WINDOW = np.hanning(N)
+
+
+def bands(block):
+    """block: float32 mono samples (len N, range -1..1) -> BANDS levels 0..1."""
+    spec = np.abs(np.fft.rfft(block * WINDOW)) / (N / 4.0)
+    mag = np.array([spec[lo:hi].max() for lo, hi in zip(LO, HI)])
+    db = 20.0 * np.log10(mag + 1e-7) + TILT
+    return np.clip((db + 74.0) / 52.0, 0.0, 1.0)
+
+
+def default_sink():
+    try:
+        return subprocess.run(["pactl", "get-default-sink"], capture_output=True, text=True, timeout=3).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def write(levels, now):
+    snap = {"t": int(now * 1000), "b": [round(float(v), 3) for v in levels]}
+    tmp = OUT + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(snap, f)
+    os.replace(tmp, OUT)
+
+
+def selftest():
+    t = np.arange(N) / RATE
+    for f in (100, 1000, 8000):
+        lv = bands(0.5 * np.sin(2 * np.pi * f * t))
+        peak = CENTERS[int(np.argmax(lv))]
+        print(f"{f:>5} Hz tone -> loudest band {peak:7.0f} Hz, level {lv.max():.2f}")
+        assert abs(np.log2(peak / f)) < .35, "band mapping is off"
+    print("silence ->", bands(np.zeros(N)).max())
+    print("ok")
+
+
+def main():
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    ring = np.zeros(N, dtype=np.float32)
+    smooth = np.zeros(BANDS)
+    env = 0.3                   # slow-decaying peak, drives auto gain for quiet material
+    while True:
+        sink = default_sink()
+        if not sink:
+            time.sleep(2)
+            continue
+        proc = subprocess.Popen(
+            ["parec", "-d", sink + ".monitor", "--format=s16le", f"--rate={RATE}", "--channels=1", "--latency-msec=30"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        last_check = time.time()
+        try:
+            while True:
+                raw = proc.stdout.read(HOP * 2)
+                if len(raw) < HOP * 2:
+                    break
+                chunk = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+                ring = np.concatenate((ring[HOP:], chunk))
+                if np.abs(chunk).max() > 1e-4:
+                    target = bands(ring)
+                    env = max(env * .997, float(target.max()))
+                    target = np.clip(target * min(3.0, max(1.0, .9 / max(env, .05))), 0.0, 1.0)
+                else:
+                    target = np.zeros(BANDS)
+                # fast attack, slow release
+                smooth = np.where(target > smooth, smooth + (target - smooth) * .65, smooth + (target - smooth) * .18)
+                write(smooth, time.time())
+                if time.time() - last_check > 5:
+                    last_check = time.time()
+                    if default_sink() != sink:      # headset/speakers switched
+                        break
+        finally:
+            proc.kill()
+            proc.wait()
+        time.sleep(1)
+
+
+if __name__ == "__main__":
+    selftest() if "--selftest" in sys.argv else main()

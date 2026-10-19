@@ -1,0 +1,47 @@
+diff --git a/modules/background/WebWallpaperHost.qml b/modules/background/WebWallpaperHost.qml
+index 4474c179..30f2f01b 100644
+--- a/modules/background/WebWallpaperHost.qml
++++ b/modules/background/WebWallpaperHost.qml
+@@ -25,6 +25,22 @@ Window {
+         return localPath.startsWith("file://") ? localPath : "file://" + localPath
+     }
+ 
++    // Layer surfaces cannot change output once created, and Qt picks the
++    // window's screen from its geometry at show time. Place the window inside
++    // the target screen up front, otherwise every host lands on the first output.
++    readonly property var targetScreen: {
++        for (let i = 0; i < Qt.application.screens.length; ++i) {
++            if (Qt.application.screens[i].name === root.screenName)
++                return Qt.application.screens[i]
++        }
++        return null
++    }
++    screen: root.targetScreen ?? Qt.application.screens[0]
++    x: root.targetScreen ? root.targetScreen.virtualX : 0
++    y: root.targetScreen ? root.targetScreen.virtualY : 0
++    width: root.targetScreen ? root.targetScreen.width : 1920
++    height: root.targetScreen ? root.targetScreen.height : 1080
++
+     visible: !root.probeMode
+     color: "black"
+     title: "iNiR Web Wallpaper"
+@@ -64,9 +80,19 @@ Window {
+         }
+     }
+ 
++    // Persistent per-screen profile. The default one is off-the-record, so a web
++    // wallpaper's localStorage (scene, layout, todo...) was lost on every restart.
++    WebEngineProfile {
++        id: persistentProfile
++        storageName: "inir-web-wallpaper" + (root.screenName.length > 0 ? "-" + root.screenName : "")
++        offTheRecord: false
++        persistentCookiesPolicy: WebEngineProfile.ForcePersistentCookies
++    }
++
+     WebEngineView {
+         id: web
+         anchors.fill: parent
++        profile: persistentProfile
+         url: root.sourceUrl
+         focus: root.interactive
+ 

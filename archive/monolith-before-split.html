@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minimal Wallpaper</title>
+<style>
+  :root {
+    --fg: #f3f0ea;
+    --fg-dim: rgba(243, 240, 234, 0.55);
+    --panel: rgba(14, 15, 20, 0.72);
+    --line: rgba(255, 255, 255, 0.12);
+    --accent: #ff8a65;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0a0b10; overflow: hidden; user-select: none; -webkit-user-select: none;
+    font-family: "Inter", "Noto Sans", "Segoe UI", system-ui, sans-serif; color: var(--fg); }
+
+  #stage { position: fixed; inset: 0; transition: opacity .35s ease; }
+  #stage.out { opacity: 0; }
+  #stage svg, #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .tw { animation: tw 4s ease-in-out infinite; }
+  @keyframes tw { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+
+  /* ---------- dashboard / widgets ---------- */
+  #dash { position: fixed; inset: 0; pointer-events: none; transition: opacity .3s ease; }
+  #dash.hidden { opacity: 0; }
+  #dash.hidden .w { pointer-events: none !important; }
+  .w { position: absolute; font-size: 1.7vh; transform-origin: 0 0; pointer-events: auto; text-shadow: 0 1px 22px rgba(0,0,0,.35); line-height: 1.35; padding: 1em 1.2em; border-radius: 1.1em; }
+  .w.off { display: none; }
+  body.wbg-scrim .w::before { content: ""; position: absolute; inset: -1.5em; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at 45% 45%, rgba(0,0,0,.45), rgba(0,0,0,0) 70%); }
+  body.wbg-glass .w { background: rgba(14,15,20,.48); backdrop-filter: blur(16px) saturate(1.2); border: 1px solid var(--line); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+  .w em { font-style: normal; }
+  .wc.stale { opacity: .5; }
+
+  .clk { font-size: 8.4em; font-weight: 200; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .clk small { font-size: .28em; font-weight: 300; color: var(--fg-dim); margin-left: .25em; letter-spacing: 0; }
+  .dt { margin-top: .8em; font-size: 1.45em; font-weight: 300; color: var(--fg-dim); letter-spacing: .04em; text-transform: lowercase; white-space: nowrap; }
+  .dt b { font-weight: 400; color: var(--fg); margin-left: .6em; font-size: .75em; letter-spacing: .12em; text-transform: uppercase; opacity: .7; }
+
+  .bars { width: 24em; display: grid; gap: 1.3em; }
+  .bar span { display: flex; justify-content: space-between; font-size: .88em; letter-spacing: .14em; text-transform: uppercase; color: var(--fg-dim); margin-bottom: .5em; }
+  .bar i { display: block; height: 2px; background: var(--line); position: relative; }
+  .bar i b { position: absolute; left: 0; top: 0; bottom: 0; background: var(--fg); width: 0; transition: width 1s linear; }
+  .bar i b.hot { background: var(--accent); }
+  #claude-w .bars { gap: 1.1em; }
+
+  .wk { display: flex; gap: 1.1em; }
+  .wk div { text-align: center; font-size: .88em; letter-spacing: .12em; color: var(--fg-dim); text-transform: uppercase; }
+  .wk div::after { content: ""; display: block; width: 1.1em; height: 1.1em; margin: .6em auto 0; border-radius: 50%; border: 1px solid var(--fg-dim); }
+  .wk div.today { color: var(--fg); }
+  .wk div.today::after { background: var(--accent); border-color: var(--accent); }
+
+  .sysw { width: 22em; }
+  .srow { display: flex; justify-content: space-between; align-items: baseline; font-size: .86em; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-dim); margin-top: .85em; }
+  .srow em { letter-spacing: .04em; text-transform: none; color: var(--fg); }
+  .srow.sm { font-size: .75em; margin-top: .65em; }
+  .srow:first-child { margin-top: 0; }
+  .sb { height: 2px; background: var(--line); margin-top: .4em; position: relative; }
+  .sb i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--fg); transition: width 1s linear; }
+  .sb i.hot { background: var(--accent); }
+  .spark { display: block; width: 100%; height: 1.6em; margin-top: .3em; color: var(--accent); opacity: .85; }
+  .sys-empty { font-size: .9em; color: var(--fg-dim); letter-spacing: .08em; }
+
+  .cal { width: 17em; }
+  .cal-h { font-size: .95em; letter-spacing: .16em; text-transform: uppercase; color: var(--fg-dim); margin-bottom: .8em; }
+  .cal-g { display: grid; grid-template-columns: repeat(7, 1fr); gap: .35em 0; text-align: center; font-size: .9em; font-variant-numeric: tabular-nums; }
+  .cal-g b { font-weight: 400; font-size: .72em; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-dim); padding-bottom: .3em; }
+  .cal-g span { padding: .2em 0; border-radius: 50%; width: 1.9em; height: 1.9em; line-height: 1.5em; margin: 0 auto; }
+  .cal-g span.today { background: var(--accent); color: #05060a; font-weight: 600; }
+
+  .pomow { width: 14em; text-align: center; }
+  .pm { position: relative; width: 11em; height: 11em; margin: 0 auto; }
+  .pm svg { width: 100%; height: 100%; }
+  .pm circle { fill: none; stroke-width: 3; }
+  .pm .pr0 { stroke: var(--line); }
+  .pm .pr1 { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+  .pt { position: absolute; inset: 0; display: grid; place-content: center; }
+  .pt b { font-size: 2.3em; font-weight: 200; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .pt small { font-size: .8em; letter-spacing: .2em; text-transform: uppercase; color: var(--fg-dim); }
+  .pbtns { display: flex; gap: .5em; justify-content: center; margin-top: 1em; }
+  .wc.flash { animation: flash 1s ease 3; }
+  @keyframes flash { 50% { box-shadow: 0 0 0 .3em var(--accent); } }
+
+  .todow { width: 20em; }
+  .td { list-style: none; margin: 0 0 .7em; padding: 0; }
+  .td li { display: flex; justify-content: space-between; align-items: center; gap: .6em; padding: .45em 0; border-bottom: 1px solid var(--line); cursor: pointer; font-size: .95em; }
+  .td li::before { content: ""; flex: none; width: .9em; height: .9em; border: 1px solid var(--fg-dim); border-radius: 50%; }
+  .td li span { flex: 1; }
+  .td li.done::before { background: var(--accent); border-color: var(--accent); }
+  .td li.done span { text-decoration: line-through; color: var(--fg-dim); }
+  .td .x { background: none; border: 0; color: var(--fg-dim); font-size: 1.2em; cursor: pointer; opacity: 0; padding: 0 .2em; }
+  .td li:hover .x { opacity: 1; }
+  .tin, .cd-e input { width: 100%; background: rgba(255,255,255,.05); color: var(--fg); border: 1px solid var(--line); border-radius: .5em; padding: .5em .7em; font: inherit; font-size: .9em; outline: none; user-select: text; -webkit-user-select: text; }
+  .tin:focus, .cd-e input:focus { border-color: var(--accent); }
+
+  .cdw { width: 16em; }
+  .cd-n { font-size: 5em; font-weight: 200; line-height: 1; font-variant-numeric: tabular-nums; }
+  .cd-l { margin-top: .4em; font-size: .95em; letter-spacing: .14em; text-transform: uppercase; color: var(--fg-dim); }
+  .cd-e { display: grid; gap: .4em; margin-top: 1em; opacity: .55; transition: opacity .2s; }
+  .cd-e:hover, .cd-e:focus-within { opacity: 1; }
+
+  body.editing .w { outline: 1px dashed var(--accent); cursor: move; background: rgba(255,255,255,.04); }
+  body.editing .w * { pointer-events: none !important; }
+  body.editing .w::after { content: attr(data-name); position: absolute; top: -1.9em; left: 0; font-size: .72em; letter-spacing: .14em; text-transform: uppercase; background: var(--accent); color: #05060a; padding: .25em .7em; border-radius: .4em; text-shadow: none; white-space: nowrap; }
+  body.editing .w.drag { outline-style: solid; z-index: 5; }
+  #editbar { position: fixed; left: 50%; bottom: 3vh; transform: translateX(-50%); display: none; align-items: center; gap: 14px; padding: 10px 14px 10px 18px; font-size: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(18px); z-index: 20; }
+  body.editing #editbar { display: flex; }
+
+  /* ---------- menu ---------- */
+  #menubtn { position: fixed; right: 2.4vh; bottom: 2.4vh; width: 4.6vh; height: 4.6vh; min-width: 34px; min-height: 34px; border-radius: 50%; border: 1px solid var(--line);
+    background: rgba(14,15,20,.35); color: var(--fg); cursor: pointer; opacity: .28; transition: opacity .2s, background .2s; display: grid; place-items: center; padding: 0; backdrop-filter: blur(8px); }
+  #menubtn:hover, body.menu-open #menubtn { opacity: 1; background: rgba(14,15,20,.7); }
+  #menubtn svg { width: 46%; height: 46%; }
+  #menu { position: fixed; right: 2.4vh; bottom: calc(2.4vh + 6vh); width: min(360px, 90vw); max-height: 80vh; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+    padding: 20px; backdrop-filter: blur(22px) saturate(1.2); box-shadow: 0 20px 60px rgba(0,0,0,.45); opacity: 0; transform: translateY(10px) scale(.98); pointer-events: none; transition: opacity .2s, transform .2s; }
+  body.menu-open #menu { opacity: 1; transform: none; pointer-events: auto; }
+  #menu { scrollbar-width: none; }
+  #menu::-webkit-scrollbar { display: none; }
+  #menu h2 { margin: 0 0 14px; font-size: 11px; font-weight: 500; letter-spacing: .22em; text-transform: uppercase; color: var(--fg-dim); }
+  #menu h2:not(:first-child) { margin-top: 22px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .scene { position: relative; border: 1px solid var(--line); border-radius: 12px; padding: 0; background: none; cursor: pointer; color: var(--fg); overflow: hidden; text-align: left; font: inherit; }
+  .scene .sw { height: 36px; }
+  .scene .nm { display: block; padding: 8px 10px; font-size: 12px; letter-spacing: .04em; }
+  .scene:hover { border-color: rgba(255,255,255,.35); }
+  .scene.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; font-size: 13px; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .sw-toggle { width: 38px; height: 22px; border-radius: 11px; background: var(--line); position: relative; cursor: pointer; border: 0; padding: 0; transition: background .2s; }
+  .sw-toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--fg); transition: transform .2s; }
+  .sw-toggle.on { background: var(--accent); }
+  .sw-toggle.on::after { transform: translateX(16px); }
+  select, .btn { background: rgba(255,255,255,.06); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 12px; padding: 6px 10px; cursor: pointer; }
+  select option { background: #14151b; color: var(--fg); }
+  .btn:hover, select:hover { border-color: rgba(255,255,255,.35); }
+  .hint { margin-top: 18px; font-size: 11px; line-height: 1.7; color: var(--fg-dim); }
+  .hint kbd { font: inherit; padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; margin-right: 2px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .tab { flex: 1; background: none; border: 1px solid var(--line); border-radius: 9px; color: var(--fg-dim); font: inherit; font-size: 12px; letter-spacing: .08em; padding: 8px 0; cursor: pointer; }
+  .tab.active { color: var(--fg); border-color: var(--accent); }
+  .pane[hidden] { display: none; }
+  .slot-b { display: flex; gap: 6px; }
+  .btn:disabled { opacity: .35; cursor: default; }
+  .row.cur span { color: var(--accent); }
+
+  /* resize handle (edit mode) */
+  .rz { position: absolute; right: -7px; bottom: -7px; width: 15px; height: 15px; background: var(--accent); border-radius: 4px; cursor: nwse-resize; display: none; z-index: 8; box-shadow: 0 0 0 3px rgba(0,0,0,.35); }
+  body.editing .rz { display: block; pointer-events: auto !important; }
+
+  /* reactor widget */
+  .reactorw { width: 36em; height: 36em; padding: 0; }
+  .rx { display: block; width: 100%; height: 100%; color: var(--accent); overflow: visible; }
+  .rsp { transform-origin: 300px 300px; animation: rspin linear infinite; }
+  @keyframes rspin { to { transform: rotate(360deg); } }
+  .rx .gv { transition: stroke-dasharray 1s linear; }
+  .rx .tk { transition: opacity .3s; }
+
+  /* HUD skin: active while a scene has hud:true */
+  body.hud .w { background: linear-gradient(180deg, rgba(4,26,36,.62), rgba(2,12,18,.66)); border: 1px solid rgba(79,227,255,.22); border-radius: 3px; backdrop-filter: blur(5px);
+    box-shadow: inset 0 0 30px rgba(79,227,255,.05); text-shadow: none; padding: 1.3em 1.4em 1.2em; font-family: ui-monospace, "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", monospace; }
+  body.hud .w::before { content: ""; position: absolute; inset: -1px; z-index: 0; pointer-events: none; background:
+    linear-gradient(var(--accent), var(--accent)) 0 0 / 16px 2px no-repeat, linear-gradient(var(--accent), var(--accent)) 0 0 / 2px 16px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) 100% 0 / 16px 2px no-repeat, linear-gradient(var(--accent), var(--accent)) 100% 0 / 2px 16px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) 0 100% / 16px 2px no-repeat, linear-gradient(var(--accent), var(--accent)) 0 100% / 2px 16px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) 100% 100% / 16px 2px no-repeat, linear-gradient(var(--accent), var(--accent)) 100% 100% / 2px 16px no-repeat; }
+  body.hud:not(.editing) .w::after { content: attr(data-name); position: absolute; top: -.75em; left: 1.1em; font-size: .62em; letter-spacing: .22em; text-transform: uppercase; color: var(--accent); background: #020c12; padding: 0 .7em; }
+  body.hud .w.reactorw { background: none; border: 0; box-shadow: none; backdrop-filter: none; padding: 0; }
+  body.hud .w.reactorw::before { display: none; }
+  body.hud:not(.editing) .w.reactorw::after { display: none; }
+  body.hud .bar i b, body.hud .sb i { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  body.hud .bar i b.hot, body.hud .sb i.hot { background: #ff7a59; box-shadow: 0 0 8px #ff7a59; }
+  body.hud .cal-g span.today { box-shadow: 0 0 14px var(--accent); }
+  body.hud .bar span, body.hud .srow, body.hud .cal-h { letter-spacing: .12em; }
+  input[type=range] { width: 130px; accent-color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="dash" class="hidden"></div>
+<div id="editbar"><span>Tryb edycji · przeciągnij widżet · uchwyt w rogu lub kółko zmienia rozmiar</span><button class="btn" id="editdone">Gotowe</button></div>
+
+<button id="menubtn" title="Menu (M)" aria-label="Menu">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg>
+</button>
+<div id="menu">
+  <div class="tabs"><button class="tab" data-p="p1">Tapeta</button><button class="tab" data-p="p2">Dashboard</button></div>
+  <div class="pane" id="p1">
+    <h2>Sceny</h2>
+    <div class="grid" id="scenes"></div>
+    <h2>Opcje</h2>
+    <div class="row"><span>Zmiana automatyczna</span>
+      <select id="auto"><option value="0">wyłączona</option><option value="1">co 1 min</option><option value="5">co 5 min</option><option value="15">co 15 min</option><option value="60">co godzinę</option></select></div>
+    <div class="row"><span>Inny wariant sceny</span><button class="btn" id="reseed">Przetasuj</button></div>
+    <div class="hint"><kbd>klik</kbd> następna · <kbd>PPM</kbd> poprzednia · <kbd>M</kbd> menu · <kbd>D</kbd> dashboard · <kbd>E</kbd> edycja · <kbd>spacja</kbd> wariant</div>
+  </div>
+  <div class="pane" id="p2" hidden>
+    <div class="row"><span>Dashboard włączony</span><button class="sw-toggle" id="tDash" aria-label="Dashboard"></button></div>
+    <h2>Widżety</h2>
+    <div id="wlist"></div>
+    <h2>Zegar</h2>
+    <div class="row"><span>Format 24-godzinny</span><button class="sw-toggle" id="tH24" aria-label="24h"></button></div>
+    <div class="row"><span>Sekundy</span><button class="sw-toggle" id="tSecs" aria-label="Sekundy"></button></div>
+    <h2>Wygląd</h2>
+    <div class="row"><span>Rozmiar widżetów</span><input type="range" id="dsize" min="60" max="160" step="5"></div>
+    <div class="row"><span>Tło widżetów</span>
+      <select id="wbg"><option value="none">brak</option><option value="scrim">przyciemnienie</option><option value="glass">szkło</option></select></div>
+    <h2>Układ</h2>
+    <div class="row"><span>Przesuwanie i rozmiar widżetów</span><button class="sw-toggle" id="tEdit" aria-label="Edycja"></button></div>
+    <div class="row"><span>Własny układ tej sceny</span><button class="sw-toggle" id="tOwn" aria-label="Własny układ"></button></div>
+    <div class="row"><span>Domyślne położenia</span><button class="btn" id="resetLayout">Resetuj</button></div>
+    <h2>Zapisane układy</h2>
+    <div id="slots"></div>
+    <div class="hint">Klawisze <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> przełączają zapisane układy. W trybie edycji przeciągaj widżety myszą, a rozmiar zmieniasz uchwytem w prawym dolnym rogu albo kółkiem. Zmiany zapisują się same.</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const W = 1600, H = 900;
+const $ = id => document.getElementById(id);
+const stage = $('stage');
+
+/* ---------------- helpers ---------------- */
+function rng(seed){ // mulberry32
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+function hash1(i, s){ let h = (i * 374761393 + s * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+function vnoise(x, s){ const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f); return hash1(i, s) * (1 - u) + hash1(i + 1, s) * u; }
+function fbm1(x, s){ return vnoise(x, s) * .55 + vnoise(x * 2.1, s + 7) * .3 + vnoise(x * 4.3, s + 13) * .15; }
+const f1 = n => n.toFixed(1);
+
+function ridge(base, amp, freq, seed, fill, extra = ''){
+  let d = `M-20 ${H + 20}`;
+  for (let x = -20; x <= W + 20; x += 16) d += ` L${x} ${f1(base - amp * fbm1(x * freq, seed))}`;
+  return `<path d="${d} L${W + 20} ${H + 20} Z" fill="${fill}" ${extra}/>`;
+}
+const svg = (inner, bg) => `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+
+/* ---------------- scenes ---------------- */
+const SCENES = [];
+
+// 1. Dusk: sun and layered ridges
+SCENES.push({
+  name: 'Zmierzch', swatch: 'linear-gradient(#2a1f4d,#a24a6a 60%,#f2a27c)',
+  mount(seed){
+    const r = rng(seed), sunX = 380 + r() * 840, hue = r();
+    const sky = hue < .5 ? ['#14122e', '#4a2a5e', '#d9667a', '#f6c28b'] : ['#0e1a33', '#2d4a7a', '#e58f7b', '#f8d9a0'];
+    const cols = hue < .5 ? ['#7a3f70', '#55305f', '#34224a', '#1a1030'] : ['#4a5e8f', '#34457a', '#222f5c', '#111a38'];
+    let s = `<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset=".45" stop-color="${sky[1]}"/><stop offset=".78" stop-color="${sky[2]}"/><stop offset="1" stop-color="${sky[3]}"/></linearGradient>
+      <radialGradient id="glow"><stop offset="0" stop-color="#ffe2b0" stop-opacity=".55"/><stop offset="1" stop-color="#ffe2b0" stop-opacity="0"/></radialGradient>
+      <linearGradient id="mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".16"/></linearGradient></defs>
+      <rect width="${W}" height="${H}" fill="url(#sky)"/>
+      <circle cx="${f1(sunX)}" cy="560" r="330" fill="url(#glow)"/>
+      <circle cx="${f1(sunX)}" cy="560" r="92" fill="#fbdca8"/>
+      <g id="clouds" fill="#fff" fill-opacity=".14">`;
+    for (let i = 0; i < 4; i++){ const y = 150 + r() * 260, w = 160 + r() * 260; s += `<rect class="cl" data-sp="${f1(4 + r() * 8)}" x="${f1(r() * W)}" y="${f1(y)}" width="${f1(w)}" height="6" rx="3"/>`; }
+    s += `</g>`;
+    [[620, 120, .0016], [690, 130, .0021], [770, 120, .0027], [860, 110, .0034]].forEach(([b, a, fr], i) => {
+      s += ridge(b, a, fr, seed + i * 31, cols[i]);
+      if (i === 1) s += `<rect y="${b - 60}" width="${W}" height="120" fill="url(#mist)"/>`;
+    });
+    this.clouds = null; return svg(s);
+  },
+  after(){ this.clouds = [...stage.querySelectorAll('.cl')].map(e => ({ e, x: +e.getAttribute('x'), sp: +e.dataset.sp, w: +e.getAttribute('width') })); },
+  tick(t, dt){ for (const c of this.clouds){ c.x += c.sp * dt; if (c.x > W + 20) c.x = -c.w - 20; c.e.setAttribute('x', f1(c.x)); } }
+});
+
+// 2. Moon: stars and ridges
+SCENES.push({
+  name: 'Księżyc', swatch: 'linear-gradient(#050914,#142447)',
+  mount(seed){
+    const r = rng(seed), mx = 760 + r() * 360, my = 190 + r() * 150;
+    let s = `<defs><radialGradient id="bgm" cx=".7" cy=".25" r="1"><stop offset="0" stop-color="#1c2b55"/><stop offset=".6" stop-color="#0b1330"/><stop offset="1" stop-color="#04060f"/></radialGradient>
+      <radialGradient id="mg"><stop offset="0" stop-color="#cfd9ff" stop-opacity=".35"/><stop offset="1" stop-color="#cfd9ff" stop-opacity="0"/></radialGradient>
+      <mask id="cres"><rect width="${W}" height="${H}" fill="#fff"/><circle cx="${f1(mx + 46)}" cy="${f1(my - 26)}" r="104" fill="#000"/></mask></defs>
+      <rect width="${W}" height="${H}" fill="url(#bgm)"/>`;
+    for (let i = 0; i < 150; i++){ const sz = .6 + r() * 1.7; s += `<circle class="tw" cx="${f1(r() * W)}" cy="${f1(r() * H * .8)}" r="${f1(sz)}" fill="#fff" style="animation-duration:${f1(2.5 + r() * 5)}s;animation-delay:-${f1(r() * 6)}s"/>`; }
+    s += `<circle cx="${f1(mx)}" cy="${f1(my)}" r="300" fill="url(#mg)"/><circle cx="${f1(mx)}" cy="${f1(my)}" r="108" fill="#efe9d6" mask="url(#cres)"/>`;
+    s += ridge(760, 140, .0019, seed + 3, '#0d1630') + ridge(840, 100, .0028, seed + 9, '#070b1a');
+    return svg(s);
+  }
+});
+
+// 3. Waves: layered sine bands
+SCENES.push({
+  name: 'Fale', swatch: 'linear-gradient(#06222b,#14707a)',
+  mount(seed){
+    const r = rng(seed), hue = 170 + Math.floor(r() * 50);
+    this.layers = []; this.hue = hue;
+    let s = `<defs><linearGradient id="bgw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="hsl(${hue},55%,8%)"/><stop offset="1" stop-color="hsl(${hue},50%,16%)"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#bgw)"/>`;
+    for (let i = 0; i < 9; i++){
+      this.layers.push({ base: 330 + i * 62, amp: 22 + i * 4, k: .0036 + i * .0006 + r() * .0008, sp: .22 + i * .035 + r() * .1, ph: r() * 6.28, ph2: r() * 6.28 });
+      s += `<path class="wv" fill="hsl(${hue},${45 + i * 3}%,${16 + i * 3.4}%)" fill-opacity=".9"/>`;
+    }
+    return svg(s);
+  },
+  after(){ this.els = [...stage.querySelectorAll('.wv')]; this.tick(0, 0); },
+  tick(t){
+    this.layers.forEach((L, i) => {
+      let d = `M-20 ${H + 20}`;
+      for (let x = -20; x <= W + 20; x += 20){
+        const y = L.base + L.amp * Math.sin(x * L.k + t * L.sp + L.ph) + L.amp * .45 * Math.sin(x * L.k * 2.3 - t * L.sp * .7 + L.ph2);
+        d += ` L${x} ${f1(y)}`;
+      }
+      this.els[i].setAttribute('d', d + ` L${W + 20} ${H + 20} Z`);
+    });
+  }
+});
+
+// 4. Topo: breathing contour lines
+SCENES.push({
+  name: 'Topo', swatch: 'linear-gradient(135deg,#101512,#2a3a31)',
+  mount(seed){
+    const r = rng(seed);
+    this.cx = 560 + r() * 480; this.cy = 380 + r() * 140;
+    this.ph = [0, 1, 2, 3].map(() => r() * 6.28); this.w = [0, 1, 2, 3].map(() => (r() - .5) * .22);
+    const warm = r() < .5; this.col = warm ? '#e9e1cf' : '#cfe6dc'; this.acc = warm ? '#e8826a' : '#8fd3c7';
+    let s = `<rect width="${W}" height="${H}" fill="${warm ? '#11110f' : '#0d1311'}"/>`;
+    for (let k = 1; k <= 36; k++){
+      const strong = k % 6 === 0;
+      s += `<path class="tp" fill="none" stroke="${strong ? this.acc : this.col}" stroke-width="${strong ? 1.8 : 1}" stroke-opacity="${strong ? .75 : f1(Math.max(.08, .5 - k * .012))}"/>`;
+    }
+    return svg(s);
+  },
+  after(){ this.els = [...stage.querySelectorAll('.tp')]; this.tick(0, 0); },
+  tick(t){
+    this.els.forEach((e, i) => {
+      const k = i + 1, R = k * 17; let d = '';
+      for (let a = 0; a <= 96; a++){
+        const th = a / 96 * Math.PI * 2;
+        const n = Math.sin(th + this.ph[0] + t * this.w[0] + k * .11) * .5 + Math.sin(2 * th + this.ph[1] + t * this.w[1] - k * .08) * .3 + Math.sin(3 * th + this.ph[2] + t * this.w[2] + k * .14) * .2;
+        const rr = R + k * 3.4 * n;
+        d += (a ? 'L' : 'M') + f1(this.cx + rr * 1.55 * Math.cos(th)) + ' ' + f1(this.cy + rr * Math.sin(th)) + ' ';
+      }
+      e.setAttribute('d', d + 'Z');
+    });
+  }
+});
+
+// 5. Orbits: thin rings and moving dots
+SCENES.push({
+  name: 'Orbity', swatch: 'radial-gradient(circle at 60% 50%,#262a3a,#090a0f 70%)',
+  mount(seed){
+    const r = rng(seed); this.cx = 760 + r() * 240; this.cy = 420 + r() * 80; this.dots = [];
+    let s = `<rect width="${W}" height="${H}" fill="#0a0b10"/><circle cx="${f1(this.cx)}" cy="${f1(this.cy)}" r="7" fill="#f3f0ea"/>`;
+    const acc = Math.floor(2 + r() * 5);
+    for (let i = 0; i < 9; i++){
+      const R = 90 + i * 66;
+      s += `<circle cx="${f1(this.cx)}" cy="${f1(this.cy)}" r="${R}" fill="none" stroke="#fff" stroke-opacity="${f1(.2 - i * .016)}" stroke-width="1"/>`;
+      this.dots.push({ R, a: r() * 6.28, sp: (i % 2 ? -1 : 1) * .5 / (1 + i * .55), n: i === acc });
+      s += `<circle class="od" r="${i === acc ? 9 : 4.5}" fill="${i === acc ? '#ff6b4a' : '#f3f0ea'}" fill-opacity="${i === acc ? 1 : .8}"/>`;
+    }
+    return svg(s);
+  },
+  after(){ this.els = [...stage.querySelectorAll('.od')]; this.tick(0, 0); },
+  tick(t){ this.dots.forEach((d, i) => { const a = d.a + t * d.sp; this.els[i].setAttribute('cx', f1(this.cx + d.R * Math.cos(a))); this.els[i].setAttribute('cy', f1(this.cy + d.R * Math.sin(a))); }); }
+});
+
+// 6. Dots: wave through a grid
+SCENES.push({
+  name: 'Siatka', swatch: 'radial-gradient(circle,#cfd8dc 1.5px,transparent 2px) 0 0/12px 12px,#0e0f12',
+  mount(seed){
+    const r = rng(seed); this.cols = 40; this.rows = 23; this.sp = 40; this.o = [r() * 6.28, r() * 6.28];
+    this.hue = r() < .5 ? '#cfd8dc' : '#f1d6b8';
+    let s = `<rect width="${W}" height="${H}" fill="#0d0e12"/>`;
+    for (let y = 0; y < this.rows; y++) for (let x = 0; x < this.cols; x++) s += `<circle class="dt" cx="${x * this.sp + 20}" cy="${y * this.sp + 10}" r="2" fill="${this.hue}"/>`;
+    return svg(s);
+  },
+  after(){ this.els = [...stage.querySelectorAll('.dt')]; this.tick(0, 0); },
+  tick(t){
+    const px = 800 + 520 * Math.sin(t * .27 + this.o[0]), py = 450 + 280 * Math.sin(t * .21 + this.o[1]);
+    this.els.forEach((e, i) => {
+      const x = (i % this.cols) * this.sp + 20, y = Math.floor(i / this.cols) * this.sp + 10;
+      const d = Math.hypot(x - px, y - py), k = Math.max(0, Math.sin(d * .018 - t * 1.3)) * Math.exp(-d / 900);
+      e.setAttribute('r', f1(1.6 + k * 7)); e.setAttribute('fill-opacity', f1(.18 + k * 1.1 > 1 ? 1 : .18 + k * 1.1));
+    });
+  }
+});
+
+// 7. Nebula (WebGL shader)
+SCENES.push({
+  name: 'Mgławica', swatch: 'linear-gradient(135deg,#2a1450,#c43c78 55%,#2aa3a8)', gl: true,
+  mount(seed){ this.seed = seed % 97; return '<canvas id="glc"></canvas>'; },
+  after(){
+    const c = $('glc'), gl = c.getContext('webgl', { antialias: false, powerPreference: 'low-power' });
+    this.gl = gl; if (!gl) return;
+    const sh = (ty, src) => { const s = gl.createShader(ty); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s)); return s; };
+    const p = gl.createProgram();
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, 'attribute vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }'));
+    gl.attachShader(p, sh(gl.FRAGMENT_SHADER, NEBULA_FRAG));
+    gl.linkProgram(p); gl.useProgram(p);
+    const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const l = gl.getAttribLocation(p, 'p'); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 2, gl.FLOAT, false, 0, 0);
+    this.uR = gl.getUniformLocation(p, 'res'); this.uT = gl.getUniformLocation(p, 't');
+    const sc = .6, dpr = Math.min(devicePixelRatio || 1, 2) * sc;
+    c.width = Math.floor(innerWidth * dpr); c.height = Math.floor(innerHeight * dpr);
+    gl.viewport(0, 0, c.width, c.height); gl.uniform2f(this.uR, c.width, c.height);
+  },
+  tick(t){ if (!this.gl) return; this.gl.uniform1f(this.uT, ((Date.now() - 1.7e12) / 1000) % 100000 + this.seed * 37); this.gl.drawArrays(this.gl.TRIANGLES, 0, 3); },
+  unmount(){ const e = this.gl && this.gl.getExtension('WEBGL_lose_context'); if (e) e.loseContext(); this.gl = null; }
+});
+
+/* ---------------- HUD / Jarvis scenes ---------------- */
+function cvInit(scene, scale = 1){
+  const c = $('cv'), dpr = Math.min(devicePixelRatio || 1, 2) * scale;
+  c.width = Math.max(1, Math.floor(innerWidth * dpr)); c.height = Math.max(1, Math.floor(innerHeight * dpr));
+  scene.c = c; scene.g = c.getContext('2d'); scene.g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  scene.w = innerWidth; scene.h = innerHeight;
+}
+const rad = d => d * Math.PI / 180;
+function arcPath(cx, cy, r, a0, a1){
+  const p = a => `${f1(cx + r * Math.cos(rad(a)))} ${f1(cy + r * Math.sin(rad(a)))}`;
+  return `M${p(a0)} A${r} ${r} 0 ${(a1 - a0) % 360 > 180 ? 1 : 0} 1 ${p(a1)}`;
+}
+const hexs = (r, n = 4) => Array.from({ length: n }, () => Math.floor(r() * 65536).toString(16).toUpperCase().padStart(4, '0')).join(' ');
+
+// 8. Reactor: rotating rings around a core
+SCENES.push({
+  name: 'Reaktor', accent: '#4fe3ff', swatch: 'radial-gradient(circle,#4fe3ff 0 6%,#0b3a4a 7% 30%,#02090e 60%)',
+  mount(seed){
+    const r = rng(seed), C = '#4fe3ff', cx = 800, cy = 450;
+    let s = `<defs><radialGradient id="rbg" cx=".5" cy=".5" r=".75"><stop offset="0" stop-color="#073040"/><stop offset=".6" stop-color="#020d14"/><stop offset="1" stop-color="#010508"/></radialGradient>
+      <radialGradient id="core"><stop offset="0" stop-color="#d8fbff"/><stop offset=".25" stop-color="${C}" stop-opacity=".9"/><stop offset="1" stop-color="${C}" stop-opacity="0"/></radialGradient>
+      <pattern id="gr" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="${C}" stroke-opacity=".055"/></pattern>
+      <style>.sp{transform-origin:${cx}px ${cy}px;animation:spin linear infinite}.fl{animation:fl 3s ease-in-out infinite}@keyframes spin{to{transform:rotate(360deg)}}@keyframes fl{0%,100%{opacity:.25}50%{opacity:.7}}</style></defs>
+      <rect width="${W}" height="${H}" fill="url(#rbg)"/><rect width="${W}" height="${H}" fill="url(#gr)"/>
+      <g fill="none" stroke="${C}" stroke-width="2" stroke-opacity=".8"><path d="M40 130V40H130M${W - 40} 130V40H${W - 130}M40 ${H - 130}V${H - 40}H130M${W - 40} ${H - 130}V${H - 40}H${W - 130}"/></g>
+      <circle cx="${cx}" cy="${cy}" r="260" fill="url(#core)" opacity=".28"/>
+      <circle class="sp" style="animation-duration:120s" cx="${cx}" cy="${cy}" r="410" fill="none" stroke="${C}" stroke-opacity=".5" stroke-width="2" stroke-dasharray="1 13"/>
+      <g class="sp" style="animation-duration:${f1(70 + r() * 30)}s;animation-direction:reverse" stroke="${C}" stroke-opacity=".6">`;
+    for (let a = 0; a < 360; a += 4){ const L = a % 20 === 0 ? 20 : 9, co = Math.cos(rad(a)), si = Math.sin(rad(a)); s += `<line x1="${f1(cx + 345 * co)}" y1="${f1(cy + 345 * si)}" x2="${f1(cx + (345 + L) * co)}" y2="${f1(cy + (345 + L) * si)}"/>`; }
+    s += `</g><g class="sp" style="animation-duration:${f1(34 + r() * 20)}s" fill="none" stroke="${C}" stroke-linecap="butt">`;
+    for (let i = 0, a = r() * 60; i < 4; i++){ const len = 40 + r() * 38; s += `<path d="${arcPath(cx, cy, 290, a, a + len)}" stroke-width="9" stroke-opacity=".85"/>`; a += len + 14 + r() * 30; }
+    s += `</g><g class="sp" style="animation-duration:${f1(22 + r() * 10)}s;animation-direction:reverse" fill="none" stroke="${C}">`;
+    for (let i = 0, a = r() * 90; i < 6; i++){ const len = 22 + r() * 34; s += `<path d="${arcPath(cx, cy, 232, a, a + len)}" stroke-width="3" stroke-opacity=".8"/>`; a += len + 16 + r() * 26; }
+    s += `</g><circle cx="${cx}" cy="${cy}" r="180" fill="none" stroke="${C}" stroke-opacity=".35"/>
+      <polygon class="sp" style="animation-duration:46s" fill="none" stroke="${C}" stroke-width="2" stroke-opacity=".7" points="${[0, 1, 2, 3, 4, 5].map(k => f1(cx + 128 * Math.cos(rad(k * 60))) + ',' + f1(cy + 128 * Math.sin(rad(k * 60)))).join(' ')}"/>
+      <circle cx="${cx}" cy="${cy}" r="70" fill="url(#core)"/><circle cx="${cx}" cy="${cy}" r="46" fill="none" stroke="#d8fbff" stroke-opacity=".8" stroke-width="2"/>
+      <text x="${cx}" y="${cy + 5}" text-anchor="middle" font-family="monospace" font-size="15" letter-spacing="5" fill="#02131a" font-weight="700">ONLINE</text>
+      <text x="${cx}" y="${cy + 60}" text-anchor="middle" font-family="monospace" font-size="12" letter-spacing="7" fill="${C}" fill-opacity=".8">SCP · CORE</text>`;
+    for (let i = 0; i < 9; i++){
+      s += `<text class="fl" x="64" y="${H - 220 + i * 18}" font-family="monospace" font-size="11" fill="${C}" style="animation-delay:-${f1(r() * 3)}s">SYS ${hexs(r, 3)}</text>`;
+      s += `<text class="fl" x="${W - 64}" text-anchor="end" y="${H - 220 + i * 18}" font-family="monospace" font-size="11" fill="${C}" style="animation-delay:-${f1(r() * 3)}s">${hexs(r, 3)} NET</text>`;
+    }
+    return svg(s);
+  }
+});
+
+// 9. Radar: sweep and fading blips
+SCENES.push({
+  name: 'Radar', accent: '#5dff9d', swatch: 'radial-gradient(circle,#0a3a22 0 20%,#03100a 21% 40%,#020a07 41%)',
+  mount(seed){ this.seed = seed; return '<canvas id="cv"></canvas>'; },
+  after(){
+    cvInit(this, .8); const r = rng(this.seed);
+    this.blips = Array.from({ length: 16 }, () => ({ a: r() * 6.283, d: .15 + r() * .8, v: (r() - .5) * .05, s: 2 + r() * 3 }));
+  },
+  tick(t){
+    const g = this.g, w = this.w, h = this.h, cx = w * .6, cy = h * .5, R = h * .42, G = '93,255,157';
+    g.fillStyle = '#020a07'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = `rgba(${G},.22)`; g.lineWidth = 1;
+    for (let i = 1; i <= 4; i++){ g.beginPath(); g.arc(cx, cy, R * i / 4, 0, 6.2832); g.stroke(); }
+    g.beginPath(); g.moveTo(cx - R, cy); g.lineTo(cx + R, cy); g.moveTo(cx, cy - R); g.lineTo(cx, cy + R); g.stroke();
+    for (let a = 0; a < 360; a += 5){ const c = Math.cos(rad(a)), s = Math.sin(rad(a)), L = a % 30 ? 6 : 14; g.beginPath(); g.moveTo(cx + R * c, cy + R * s); g.lineTo(cx + (R + L) * c, cy + (R + L) * s); g.stroke(); }
+    const a = (t * .9) % 6.2832, wedge = .9 / 6.2832;
+    const cg = g.createConicGradient(a - .9, cx, cy);
+    cg.addColorStop(0, `rgba(${G},0)`); cg.addColorStop(wedge, `rgba(${G},.42)`); cg.addColorStop(wedge + .002, `rgba(${G},0)`); cg.addColorStop(1, `rgba(${G},0)`);
+    g.fillStyle = cg; g.beginPath(); g.arc(cx, cy, R, 0, 6.2832); g.fill();
+    g.strokeStyle = `rgba(${G},.9)`; g.lineWidth = 2; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + R * Math.cos(a), cy + R * Math.sin(a)); g.stroke();
+    for (const b of this.blips){
+      b.a += b.v * .02;
+      const since = ((a - b.a) % 6.2832 + 6.2832) % 6.2832, al = Math.exp(-since * 1.1);
+      const x = cx + R * b.d * Math.cos(b.a), y = cy + R * b.d * Math.sin(b.a);
+      g.fillStyle = `rgba(${G},${f1(al)})`; g.beginPath(); g.arc(x, y, b.s, 0, 6.2832); g.fill();
+      g.strokeStyle = `rgba(${G},${f1(al * .6)})`; g.lineWidth = 1; g.beginPath(); g.arc(x, y, b.s + 5 + (1 - al) * 6, 0, 6.2832); g.stroke();
+    }
+    g.fillStyle = `rgba(${G},.7)`; g.beginPath(); g.arc(cx, cy, 4, 0, 6.2832); g.fill();
+    g.font = '11px monospace'; g.fillStyle = `rgba(${G},.55)`;
+    g.fillText('RNG ' + (R | 0) + ' · SWEEP ' + ((a * 57.2958) | 0).toString().padStart(3, '0') + '°', cx - R, cy + R + 30);
+  }
+});
+
+// 10. Hex grid: pulses travelling through cells
+SCENES.push({
+  name: 'Heksy', accent: '#4fe3ff', swatch: 'linear-gradient(135deg,#031018,#0a4a5c)',
+  mount(seed){ this.seed = seed % 1000; return '<canvas id="cv"></canvas>'; },
+  after(){ cvInit(this, .8); },
+  tick(t){
+    const g = this.g, w = this.w, h = this.h, s = 34, dx = 1.5 * s, dy = Math.sqrt(3) * s, S = this.seed;
+    g.fillStyle = '#020a10'; g.fillRect(0, 0, w, h);
+    const px = w * (.5 + .35 * Math.sin(t * .23 + S)), py = h * (.5 + .3 * Math.sin(t * .31 + S * 2));
+    g.lineWidth = 1;
+    for (let c = -1; c * dx < w + s; c++) for (let r = -1; r * dy < h + dy; r++){
+      const x = c * dx, y = r * dy + (c & 1 ? dy / 2 : 0), d = Math.hypot(x - px, y - py);
+      const k = Math.max(0, Math.sin(d * .018 - t * 1.6)) * Math.exp(-d / 650), fl = hash1(c * 131 + r, S) > .985 ? Math.max(0, Math.sin(t * 2 + c + r)) : 0, v = Math.min(1, k + fl * .8);
+      g.beginPath();
+      for (let i = 0; i < 6; i++){ const a = rad(60 * i); g[i ? 'lineTo' : 'moveTo'](x + (s - 2) * Math.cos(a), y + (s - 2) * Math.sin(a)); }
+      g.closePath();
+      if (v > .04){ g.fillStyle = `rgba(79,227,255,${f1(v * .22)})`; g.fill(); }
+      g.strokeStyle = `rgba(79,227,255,${f1(.07 + v * .8)})`; g.stroke();
+    }
+  }
+});
+
+// 11. Data stream: falling glyph columns
+SCENES.push({
+  name: 'Strumień', accent: '#5dffc8', swatch: 'linear-gradient(#010806,#0b5c3f)',
+  mount(seed){ this.seed = seed; return '<canvas id="cv"></canvas>'; },
+  after(){
+    cvInit(this, 1); const r = rng(this.seed); this.fs = 16; this.n = Math.ceil(this.w / this.fs);
+    this.y = Array.from({ length: this.n }, () => r() * -60); this.v = Array.from({ length: this.n }, () => .25 + r() * .6);
+    this.g.fillStyle = '#010806'; this.g.fillRect(0, 0, this.w, this.h); this.acc = 0;
+  },
+  tick(t, dt){
+    const g = this.g, fs = this.fs, CH = '01ABCDEF<>/|=+*#:;';
+    this.acc += dt; if (this.acc < .04) return; this.acc = 0;
+    g.fillStyle = 'rgba(1,8,6,.13)'; g.fillRect(0, 0, this.w, this.h);
+    g.font = fs + 'px monospace';
+    for (let i = 0; i < this.n; i++){
+      const y = this.y[i], ch = CH[(Math.random() * CH.length) | 0];
+      g.fillStyle = 'rgba(93,255,200,.55)'; g.fillText(ch, i * fs, (y - 1) * fs);
+      g.fillStyle = '#e4fff6'; g.fillText(CH[(Math.random() * CH.length) | 0], i * fs, y * fs);
+      this.y[i] += this.v[i] * 1.6; if (this.y[i] * fs > this.h + 40 && Math.random() > .97) this.y[i] = -Math.random() * 30;
+    }
+  }
+});
+
+// 12. Circuit: traces with travelling pulses
+SCENES.push({
+  name: 'Obwód', accent: '#42f5b0', swatch: 'linear-gradient(135deg,#04120f,#0e6a56)',
+  mount(seed){
+    const r = rng(seed), C = '#42f5b0', G = 40;
+    let s = `<defs><style>.pu{stroke-dasharray:4 96;animation:pu linear infinite}@keyframes pu{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}</style></defs><rect width="${W}" height="${H}" fill="#030e0c"/>`;
+    for (let i = 0; i < 70; i++){
+      let x = Math.floor(r() * 40) * G, y = Math.floor(r() * 23) * G, dir = Math.floor(r() * 4), d = `M${x} ${y}`; const sx = x, sy = y;
+      for (let k = 0, n = 3 + Math.floor(r() * 5); k < n; k++){
+        const len = (1 + Math.floor(r() * 4)) * G; x += [len, 0, -len, 0][dir]; y += [0, len, 0, -len][dir]; x = Math.max(0, Math.min(W, x)); y = Math.max(0, Math.min(H, y));
+        d += `L${x} ${y}`; dir = (dir + (r() < .5 ? 1 : 3)) % 4;
+      }
+      s += `<path d="${d}" fill="none" stroke="${C}" stroke-opacity=".22" stroke-width="1.5" stroke-linejoin="round"/>`;
+      s += `<path class="pu" pathLength="100" d="${d}" fill="none" stroke="#d6fff0" stroke-opacity=".9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="animation-duration:${f1(3 + r() * 6)}s;animation-delay:-${f1(r() * 8)}s"/>`;
+      s += `<circle cx="${sx}" cy="${sy}" r="4" fill="#030e0c" stroke="${C}" stroke-opacity=".7"/><circle cx="${x}" cy="${y}" r="3" fill="${C}" fill-opacity=".6"/>`;
+    }
+    s += `<rect x="${760 + Math.floor(r() * 3) * 40}" y="320" width="200" height="200" rx="10" fill="#041a16" stroke="${C}" stroke-opacity=".8" stroke-width="2"/><rect x="${790 + 0}" y="350" width="140" height="140" fill="none" stroke="${C}" stroke-opacity=".3"/>`;
+    return svg(s);
+  }
+});
+
+// 13. Globe: rotating wireframe with links
+SCENES.push({
+  name: 'Glob', accent: '#58b8ff', swatch: 'radial-gradient(circle at 60% 50%,#1a5fa0 0 30%,#06101e 31%)',
+  mount(seed){ this.seed = seed; return '<canvas id="cv"></canvas>'; },
+  after(){
+    cvInit(this, .9); const r = rng(this.seed);
+    this.pts = Array.from({ length: 170 }, () => ({ la: Math.asin(r() * 2 - 1), lo: r() * 6.283, s: .7 + r() * 1.6 }));
+    this.links = Array.from({ length: 12 }, () => [Math.floor(r() * 170), Math.floor(r() * 170)]);
+    this.tilt = .35 + r() * .25;
+  },
+  tick(t){
+    const g = this.g, w = this.w, h = this.h, cx = w * .62, cy = h * .5, R = h * .36, rot = t * .18, ti = this.tilt, B = '88,184,255';
+    g.fillStyle = '#030811'; g.fillRect(0, 0, w, h);
+    const grd = g.createRadialGradient(cx, cy, R * .6, cx, cy, R * 1.5); grd.addColorStop(0, `rgba(${B},.16)`); grd.addColorStop(1, `rgba(${B},0)`); g.fillStyle = grd; g.fillRect(0, 0, w, h);
+    const P = (la, lo) => { // lat/lon -> screen, z = depth
+      const x = Math.cos(la) * Math.sin(lo + rot), y = Math.sin(la), z = Math.cos(la) * Math.cos(lo + rot);
+      return [cx + R * x, cy + R * (y * Math.cos(ti) - z * Math.sin(ti)), y * Math.sin(ti) + z * Math.cos(ti)];
+    };
+    g.lineWidth = 1;
+    const line = (fn, n) => { let prev = fn(0); for (let i = 1; i <= n; i++){ const p = fn(i / n); g.strokeStyle = `rgba(${B},${p[2] > 0 ? .5 : .14})`; g.beginPath(); g.moveTo(prev[0], prev[1]); g.lineTo(p[0], p[1]); g.stroke(); prev = p; } };
+    for (let lo = 0; lo < 360; lo += 20) line(u => P(-1.5708 + u * 3.1416, rad(lo)), 40);
+    for (let la = -60; la <= 60; la += 20) line(u => P(rad(la), u * 6.2832), 72);
+    g.strokeStyle = `rgba(${B},.35)`; g.beginPath(); g.arc(cx, cy, R, 0, 6.2832); g.stroke();
+    for (let i = 0; i < 3; i++){ g.strokeStyle = `rgba(${B},${.22 - i * .05})`; g.setLineDash([2, 10]); g.beginPath(); g.ellipse(cx, cy, R * (1.18 + i * .16), R * (1.18 + i * .16) * .32, rad(-18 + i * 9) + t * .02, 0, 6.2832); g.stroke(); g.setLineDash([]); }
+    for (const [a, b] of this.links){
+      const A = this.pts[a], Bp = this.pts[b], p = P(A.la, A.lo), q = P(Bp.la, Bp.lo); if (p[2] < 0 || q[2] < 0) continue;
+      const mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2 - R * .28;
+      g.strokeStyle = `rgba(${B},.55)`; g.beginPath(); g.moveTo(p[0], p[1]); g.quadraticCurveTo(mx, my, q[0], q[1]); g.stroke();
+      const u = (t * .25 + a * .13) % 1, ix = (1 - u) * (1 - u) * p[0] + 2 * (1 - u) * u * mx + u * u * q[0], iy = (1 - u) * (1 - u) * p[1] + 2 * (1 - u) * u * my + u * u * q[1];
+      g.fillStyle = '#e8f6ff'; g.beginPath(); g.arc(ix, iy, 2.4, 0, 6.2832); g.fill();
+    }
+    for (const q of this.pts){ const p = P(q.la, q.lo); g.fillStyle = `rgba(${p[2] > 0 ? '220,240,255' : B},${p[2] > 0 ? .9 : .25})`; g.beginPath(); g.arc(p[0], p[1], q.s * (p[2] > 0 ? 1 : .7), 0, 6.2832); g.fill(); }
+  }
+});
+
+// 14. Equalizer: real spectrum of whatever is playing (scp-audioviz writes audio.json)
+const AUDIO_URL = 'file:///home/scplegion/.cache/scp-center/audio.json';
+SCENES.push({
+  name: 'Equalizer', accent: '#7aa8ff', swatch: 'linear-gradient(90deg,#4fe3ff,#8a5cff,#ff4fa8)',
+  mount(seed){ this.seed = seed % 1000; return '<canvas id="cv"></canvas>'; },
+  after(){
+    cvInit(this, .9);
+    const n = 72; this.n = n; this.lv = new Float32Array(n); this.tg = new Float32Array(n); this.pk = new Float32Array(n); this.pv = new Float32Array(n);
+    this.live = false; this.level = 0; this.bass = 0; this.run = true;
+    const poll = () => {
+      if (!this.run) return;
+      xhr(AUDIO_URL, d => {
+        this.live = !!(d && d.b && d.b.length === n && Date.now() - d.t < 1500);
+        if (this.live) this.tg.set(d.b); else this.tg.fill(0);
+        if (this.run) this.timer = setTimeout(poll, 33);
+      });
+    };
+    poll();
+  },
+  unmount(){ this.run = false; clearTimeout(this.timer); },
+  tick(t, dt){
+    const g = this.g, w = this.w, h = this.h, n = this.n, S = this.seed, bw = w * .8 / n, x0 = w * .1, cy = h * .74, maxH = h * .36;
+    let sum = 0, bass = 0;
+    for (let i = 0; i < n; i++){
+      const tg = this.tg[i], v = this.lv[i];
+      this.lv[i] = tg > v ? v + (tg - v) * .7 : v + (tg - v) * .22;                 // quick rise, softer fall
+      if (this.lv[i] >= this.pk[i]){ this.pk[i] = this.lv[i]; this.pv[i] = 0; }     // peak caps fall with gravity
+      else { this.pv[i] += dt * 1.4; this.pk[i] = Math.max(this.lv[i], this.pk[i] - this.pv[i] * dt); }
+      sum += this.lv[i]; if (i < 9) bass += this.lv[i];
+    }
+    this.level += (sum / n - this.level) * .3; this.bass += (bass / 9 - this.bass) * .35;
+
+    g.fillStyle = '#04050c'; g.fillRect(0, 0, w, h);
+    const glow = g.createRadialGradient(w / 2, cy, 0, w / 2, cy, w * (.3 + this.bass * .35));
+    glow.addColorStop(0, `rgba(122,168,255,${(.05 + this.bass * .4).toFixed(3)})`); glow.addColorStop(1, 'rgba(122,168,255,0)');
+    g.fillStyle = glow; g.fillRect(0, 0, w, h);
+
+    const grad = g.createLinearGradient(x0, 0, x0 + w * .8, 0); grad.addColorStop(0, '#4fe3ff'); grad.addColorStop(.55, '#8a5cff'); grad.addColorStop(1, '#ff4fa8');
+    for (let i = 0; i < n; i++){
+      const bh = 3 + Math.pow(this.lv[i], 1.15) * maxH, ph = 3 + Math.pow(this.pk[i], 1.15) * maxH, x = x0 + i * bw, bwid = bw * .66;
+      g.fillStyle = grad; g.globalAlpha = .92; g.fillRect(x, cy - bh, bwid, bh);
+      g.globalAlpha = .24; g.fillRect(x, cy + 4, bwid, bh * .55);
+      g.globalAlpha = 1; g.fillStyle = '#eaf3ff'; g.fillRect(x, cy - ph - 6, bwid, 2);
+    }
+    g.lineWidth = 1.5;
+    const amp = 6 + this.level * 70;
+    for (let k = 0; k < 3; k++){
+      g.strokeStyle = ['rgba(79,227,255,.5)', 'rgba(138,92,255,.4)', 'rgba(255,79,168,.35)'][k]; g.beginPath();
+      for (let x = 0; x <= w; x += 16){ const y = h * .93 + Math.sin(x * (.006 + k * .002) + t * (.8 + k * .3) + S) * amp * (.5 + k * .25) + Math.sin(x * .017 - t) * 3; g[x ? 'lineTo' : 'moveTo'](x, y); }
+      g.stroke();
+    }
+    if (!this.live){ g.font = '12px monospace'; g.fillStyle = 'rgba(234,243,255,.35)'; g.textAlign = 'center'; g.fillText('brak sygnału audio · scp-audioviz', w / 2, h * .5); g.textAlign = 'start'; }
+  }
+});
+
+// 15. Dashboard: HUD command-centre background; its widgets (reactor, system...) are movable and resizable
+SCENES.push({
+  name: 'Dashboard', accent: '#4fe3ff', hud: true, swatch: 'linear-gradient(135deg,#02131a,#0b5a70)',
+  preset: { on: ['reactor', 'system', 'claude', 'calendar', 'progress'], layout: {
+    reactor: { x: .302, y: .15, s: 1.15 }, system: { x: .035, y: .12, s: 1 }, claude: { x: .035, y: .68, s: 1 }, calendar: { x: .79, y: .12, s: 1 }, progress: { x: .70, y: .58, s: 1 } } },
+  mount(seed){
+    const r = rng(seed), C = '#4fe3ff', cx = 800, cy = 450;
+    let s = `<defs><radialGradient id="jbg" cx=".5" cy=".5" r=".8"><stop offset="0" stop-color="#05283a"/><stop offset=".55" stop-color="#021019"/><stop offset="1" stop-color="#010508"/></radialGradient>
+      <pattern id="jgr" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="${C}" stroke-opacity=".05"/></pattern>
+      <linearGradient id="jsc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C}" stop-opacity="0"/><stop offset=".5" stop-color="${C}" stop-opacity=".07"/><stop offset="1" stop-color="${C}" stop-opacity="0"/></linearGradient>
+      <style>.hs{animation:hscan 9s linear infinite}@keyframes hscan{from{transform:translateY(-140px)}to{transform:translateY(${H}px)}}.hb{animation:hb 1.6s steps(2) infinite}@keyframes hb{50%{opacity:.15}}.hf{animation:hf 3.4s ease-in-out infinite}@keyframes hf{0%,100%{opacity:.2}50%{opacity:.7}}</style></defs>
+      <rect width="${W}" height="${H}" fill="url(#jbg)"/><rect width="${W}" height="${H}" fill="url(#jgr)"/>
+      <g fill="none" stroke="${C}" stroke-opacity=".12"><circle cx="${cx}" cy="${cy}" r="345" stroke-dasharray="2 14"/><circle cx="${cx}" cy="${cy}" r="395" stroke-dasharray="1 9"/><path d="M0 ${cy}H${W}M${cx} 0V${H}"/></g>
+      <g fill="none" stroke="${C}" stroke-width="3" stroke-opacity=".85"><path d="M30 130V30H130M${W - 30} 130V30H${W - 130}M30 ${H - 130}V${H - 30}H130M${W - 30} ${H - 130}V${H - 30}H${W - 130}"/></g>
+      <g stroke="${C}" stroke-opacity=".35"><path d="M150 62H${W - 150}"/>`;
+    for (let x = 150; x <= W - 150; x += 20) s += `<path d="M${x} 62v${x % 100 === 50 ? 12 : 6}"/>`;
+    s += `<path d="M150 838H${W - 150}"/>`;
+    for (let x = 150; x <= W - 150; x += 20) s += `<path d="M${x} 838v${x % 100 === 50 ? -12 : -6}"/>`;
+    for (let y = 170; y <= H - 170; y += 20){ const L = (y - 170) % 100 === 0 ? 14 : 7; s += `<path d="M30 ${y}h${L}M${W - 30} ${y}h${-L}"/>`; }
+    s += `</g><g font-family="monospace" fill="${C}"><text x="150" y="46" font-size="13" letter-spacing="6" fill-opacity=".85">SCP · COMMAND CENTER</text>
+      <text x="${W - 150}" y="46" font-size="12" letter-spacing="5" text-anchor="end" fill-opacity=".75">SYS ONLINE</text><circle class="hb" cx="${W - 138}" cy="41" r="4"/>`;
+    for (let i = 0; i < 6; i++) s += `<text class="hf" x="${520 + i * 112}" y="46" font-size="11" fill-opacity=".8" style="animation-delay:-${f1(r() * 3.4)}s">0x${Math.floor(r() * 65536).toString(16).toUpperCase().padStart(4, '0')}</text>`;
+    for (let x = 250; x <= W - 250; x += 200) s += `<text x="${x}" y="${H - 12}" font-size="10" fill-opacity=".4" text-anchor="middle">${String(Math.round((x - 150) / 20)).padStart(3, '0')}</text>`;
+    s += `</g><rect class="hs" width="${W}" height="140" fill="url(#jsc)"/>`;
+    return svg(s);
+  }
+});
+
+const NEBULA_FRAG = `
+precision highp float;
+uniform vec2 res; uniform float t;
+float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+vec2 hash2(vec2 p){ return vec2(hash(p), hash(p + 17.31)); }
+float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+  return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
+float fbm(vec2 p){ float v = 0.0, a = 0.5; mat2 r = mat2(0.8,-0.6,0.6,0.8);
+  for(int i = 0; i < 5; i++){ v += a * noise(p); p = r * p * 2.02 + 7.3; a *= 0.5; } return v; }
+vec3 pal(float x, float s){ return 0.5 + 0.5 * cos(6.28318 * (x + vec3(0.0, 0.33, 0.67) + s)); }
+vec3 stars(vec2 uv, float scale, float density, float size, float seed){
+  vec2 g = uv * scale, id = floor(g), f = fract(g) - 0.5; float h = hash(id + seed);
+  if(h < density) return vec3(0.0);
+  vec2 off = (hash2(id + seed + 3.7) - 0.5) * 0.7; float d = length(f - off);
+  float tw = 0.55 + 0.45 * sin(t * (0.8 + h * 3.0) + h * 50.0);
+  float core = smoothstep(size, 0.0, d), halo = smoothstep(size * 4.0, 0.0, d) * 0.18;
+  return mix(vec3(0.7,0.85,1.0), vec3(1.0,0.85,0.65), hash(id + seed + 9.1)) * (core + halo) * tw; }
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5 * res) / min(res.x, res.y);
+  float time = t * 0.045, shift = 0.62 + 0.22 * sin(t * 0.012) + 0.12 * sin(t * 0.0071 + 1.3);
+  vec2 q = vec2(fbm(uv*1.3 + time), fbm(uv*1.3 + vec2(5.2,1.3) - time));
+  vec2 r = vec2(fbm(uv*1.3 + 3.0*q + vec2(1.7,9.2) + time*1.4), fbm(uv*1.3 + 3.0*q + vec2(8.3,2.8) - time*1.1));
+  float f = fbm(uv*1.2 + 3.0*r), neb = smoothstep(0.2, 0.95, f*1.1 + length(q)*0.3);
+  vec3 col = mix(vec3(0.012,0.016,0.045), pal(0.35 + f*0.4, shift) * 0.55, neb * 0.85);
+  col *= 0.65 + 0.7 * smoothstep(0.25, 0.75, fbm(uv*2.4 + r*2.0 - time));
+  float ridge = 1.0 - abs(2.0 * fbm(uv*2.0 + 2.4*r + time*1.8) - 1.0);
+  col += pow(ridge, 7.0) * pal(0.55 + f*0.3, shift) * 0.45;
+  vec2 drift = vec2(time * 0.35, 0.0);
+  col += stars(uv + drift*0.4, 28.0, 0.93, 0.045, 1.0) * 0.8 + stars(uv + drift, 14.0, 0.965, 0.06, 7.0);
+  col *= 1.0 - 0.6 * dot(uv*0.75, uv*0.75);
+  col += (hash(gl_FragCoord.xy + fract(t)) - 0.5) * 0.018;
+  col = col / (1.0 + col * 0.35);
+  gl_FragColor = vec4(pow(max(col, 0.0), vec3(0.92)), 1.0);
+}`;
+
+/* ---------------- state ---------------- */
+const params = new URLSearchParams(location.hash.slice(1));
+let state = { scene: 0, seed: (Math.random() * 1e9) | 0, dash: true, auto: 0, layout: {}, widgets: {}, slots: {}, slot: -1, sc: {}, scSeen: {}, h24: true, secs: true, dscale: 100, wbg: 'scrim', tab: 'p1', todo: [], pomo: null,
+  cd: { label: 'Nowy Rok', date: (new Date().getFullYear() + 1) + '-01-01' } };
+try { Object.assign(state, JSON.parse(localStorage.getItem('minwall') || '{}')); } catch (e) {}
+if (params.has('scene')) state.scene = +params.get('scene');
+if (params.has('dash')) state.dash = params.get('dash') === '1';
+if (params.has('menu')) document.body.classList.add('menu-open');
+if (params.has('tab')) state.tab = params.get('tab');
+state.scene = ((state.scene % SCENES.length) + SCENES.length) % SCENES.length;
+const save = () => { try { localStorage.setItem('minwall', JSON.stringify(state)); } catch (e) {} };
+
+let cur = null, busy = false;
+function show(i, seed){
+  if (cur && cur.unmount) cur.unmount();
+  state.scene = ((i % SCENES.length) + SCENES.length) % SCENES.length;
+  if (seed !== undefined) state.seed = seed;
+  cur = SCENES[state.scene];
+  document.documentElement.style.setProperty('--accent', cur.accent || '#ff8a65');
+  stage.innerHTML = cur.mount(state.seed + state.scene * 977);
+  if (cur.after) cur.after();
+  onSceneChange();
+  [...document.querySelectorAll('.scene')].forEach((b, k) => b.classList.toggle('active', k === state.scene));
+  save();
+}
+function go(i, seed){
+  if (busy) return; busy = true; stage.classList.add('out');
+  setTimeout(() => { show(i, seed); requestAnimationFrame(() => stage.classList.remove('out')); setTimeout(() => busy = false, 120); }, 350);
+}
+
+/* ---------------- menu ---------------- */
+SCENES.forEach((s, i) => {
+  const b = document.createElement('button'); b.className = 'scene';
+  b.innerHTML = `<div class="sw" style="background:${s.swatch}"></div><span class="nm">${s.name}</span>`;
+  b.addEventListener('click', e => { e.stopPropagation(); go(i); });
+  $('scenes').appendChild(b);
+});
+const editing = () => document.body.classList.contains('editing');
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+function setTab(id){
+  state.tab = id === 'p2' ? 'p2' : 'p1';
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.p === state.tab));
+  document.querySelectorAll('.pane').forEach(p => p.hidden = p.id !== state.tab);
+  save();
+}
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', e => { e.stopPropagation(); setTab(t.dataset.p); }));
+
+$('auto').value = String(state.auto);
+$('auto').addEventListener('change', e => { state.auto = +e.target.value; save(); armAuto(); });
+$('auto').addEventListener('click', e => e.stopPropagation());
+$('reseed').addEventListener('click', e => { e.stopPropagation(); go(state.scene, (Math.random() * 1e9) | 0); });
+const toggleMenu = () => document.body.classList.toggle('menu-open');
+$('menubtn').addEventListener('click', e => { e.stopPropagation(); toggleMenu(); });
+$('menu').addEventListener('click', e => e.stopPropagation());
+$('editbar').addEventListener('click', e => e.stopPropagation());
+
+let autoTimer = null;
+function armAuto(){ clearInterval(autoTimer); if (state.auto > 0) autoTimer = setInterval(() => go(state.scene + 1), state.auto * 60000); }
+
+/* click on the wallpaper = next scene, right click = previous (disabled while arranging widgets) */
+document.addEventListener('click', () => {
+  if (editing()) return;
+  if (document.body.classList.contains('menu-open')) { document.body.classList.remove('menu-open'); return; }
+  go(state.scene + 1);
+});
+document.addEventListener('contextmenu', e => { e.preventDefault(); if (!editing()) go(state.scene - 1); });
+document.addEventListener('keydown', e => {
+  if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (e.key === 'ArrowRight') go(state.scene + 1);
+  else if (e.key === 'ArrowLeft') go(state.scene - 1);
+  else if (e.key === 'm' || e.key === 'M') toggleMenu();
+  else if (e.key === 'd' || e.key === 'D') setDash(!state.dash);
+  else if (e.key === 'e' || e.key === 'E') setEdit(!editing());
+  else if (/^[1-3]$/.test(e.key)) loadSlot(+e.key - 1);
+  else if (e.key === ' ') { e.preventDefault(); go(state.scene, (Math.random() * 1e9) | 0); }
+  else if (e.key === 'Escape') { document.body.classList.remove('menu-open'); setEdit(false); }
+});
+
+/* ---------------- dashboard widgets ---------------- */
+const dash = $('dash');
+const pad = v => String(v).padStart(2, '0');
+const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const DAYS = ['pn', 'wt', 'śr', 'cz', 'pt', 'sb', 'nd'];
+const MONTHS = ['styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec', 'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień'];
+function isoWeek(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), n = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - n);
+  return Math.ceil(((t - Date.UTC(t.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
+}
+function xhr(url, cb){
+  const x = new XMLHttpRequest();
+  x.open('GET', url + '?' + Date.now()); x.responseType = 'text';
+  x.onload = () => { try { cb(JSON.parse(x.responseText)); } catch (e) { cb(null); } };
+  x.onerror = () => cb(null);
+  x.send();
+}
+const gb = b => (b / 1073741824).toFixed(b >= 1.07e10 ? 0 : 1);
+const rate = b => b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB/s' : (b / 1024).toFixed(0) + ' KB/s';
+const upt = sec => { const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60); return d ? `${d}d ${h}h` : `${h}h ${m}m`; };
+const sbar = (p, hot) => `<div class="sb"><i class="${hot ? 'hot' : ''}" style="width:${clamp(p, 0, 100).toFixed(1)}%"></i></div>`;
+function spark(v, max){
+  if (v.length < 2) return '';
+  const w = 120, h = 20, n = v.length;
+  const pts = v.map((y, i) => `${(i / (n - 1) * w).toFixed(1)},${(h - clamp(y / max, 0, 1) * h).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.3" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function beep(){
+  try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain();
+    o.frequency.value = 880; g.gain.value = .08; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + .35); } catch (e) {}
+}
+
+
+function reactorSvg(){
+  const cx = 300, cy = 300, R = [256, 238, 220, 202];
+  let h = `<svg class="rx" viewBox="0 0 600 600"><defs><radialGradient id="rxg"><stop offset="0" stop-color="#e6fdff" stop-opacity=".85"/><stop offset=".3" stop-color="currentColor" stop-opacity=".3"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient></defs>
+    <circle class="rxglow" cx="${cx}" cy="${cy}" r="250" fill="url(#rxg)" opacity=".3"/>
+    <circle class="rsp" style="animation-duration:140s" cx="${cx}" cy="${cy}" r="296" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="2" stroke-dasharray="1 12"/>`;
+  for (let a = 0; a < 60; a++){
+    const an = rad(a * 6 - 90), L = a % 5 ? 8 : 16;
+    h += `<line class="tk" x1="${f1(cx + 276 * Math.cos(an))}" y1="${f1(cy + 276 * Math.sin(an))}" x2="${f1(cx + (276 + L) * Math.cos(an))}" y2="${f1(cy + (276 + L) * Math.sin(an))}" stroke="currentColor" stroke-width="2" opacity=".3"/>`;
+  }
+  R.forEach(r => {
+    const d = arcPath(cx, cy, r, 135, 405);
+    h += `<path d="${d}" pathLength="100" fill="none" stroke="currentColor" stroke-opacity=".14" stroke-width="7"/><path class="gv" d="${d}" pathLength="100" fill="none" stroke="currentColor" stroke-width="7" stroke-dasharray="0 100"/>`;
+  });
+  h += `<g class="rsp" style="animation-duration:38s;animation-direction:reverse" fill="none" stroke="currentColor" stroke-opacity=".8" stroke-width="4"><path d="${arcPath(cx, cy, 182, 10, 70)}"/><path d="${arcPath(cx, cy, 182, 130, 190)}"/><path d="${arcPath(cx, cy, 182, 250, 310)}"/></g>
+    <polygon class="rsp" style="animation-duration:70s" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1.5" points="${[0, 1, 2, 3, 4, 5].map(k => f1(cx + 150 * Math.cos(rad(k * 60))) + ',' + f1(cy + 150 * Math.sin(rad(k * 60)))).join(' ')}"/>
+    <circle cx="${cx}" cy="${cy}" r="124" fill="none" stroke="currentColor" stroke-opacity=".3"/>
+    <text x="${cx}" y="236" text-anchor="middle" font-family="monospace" font-size="13" letter-spacing="7" fill="currentColor">SCP · CORE</text>
+    <text class="rt" x="${cx}" y="320" text-anchor="middle" font-size="86" font-weight="200" fill="#f3f0ea" style="font-variant-numeric:tabular-nums">--:--</text>
+    <text class="rs" x="${cx}" y="352" text-anchor="middle" font-family="monospace" font-size="19" letter-spacing="4" fill="currentColor">--</text>
+    <text class="rd" x="${cx}" y="380" text-anchor="middle" font-size="14" letter-spacing="1" fill="#f3f0ea" fill-opacity=".6"></text>`;
+  for (let i = 0; i < 4; i++) h += `<text class="lg" x="${cx}" y="${cy + 214 + i * 19}" text-anchor="middle" font-family="monospace" font-size="13" letter-spacing="1" fill="#f3f0ea" fill-opacity=".8"></text>`;
+  return h + '</svg>';
+}
+
+let usage = null, sys = null; const hist = { cpu: [], rx: [] };
+const POMO = { focus: 25 * 60000, break: 5 * 60000 };
+
+const WIDGETS = [
+  { id: 'clock', name: 'Zegar i data', x: .06, y: .08, on: true,
+    html: () => '<div class="clk"><span class="hm"></span><small class="sec"></small></div><div class="dt"></div>',
+    update(n, el){
+      let h = n.getHours(), suf = '';
+      if (!state.h24){ suf = h >= 12 ? ' PM' : ' AM'; h = h % 12 || 12; }
+      el.querySelector('.hm').textContent = `${state.h24 ? pad(h) : h}:${pad(n.getMinutes())}`;
+      el.querySelector('.sec').textContent = (state.secs ? pad(n.getSeconds()) : '') + suf;
+      el.querySelector('.dt').innerHTML = n.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) + `<b>tydz. ${isoWeek(n)}</b>`;
+    } },
+  { id: 'reactor', name: 'Reaktor', x: .31, y: .15, on: false, cls: 'reactorw',
+    html: () => reactorSvg(),
+    update(n, el){
+      let hh = n.getHours(); if (!state.h24) hh = hh % 12 || 12;
+      el.querySelector('.rt').textContent = `${state.h24 ? pad(hh) : hh}:${pad(n.getMinutes())}`;
+      el.querySelector('.rs').textContent = pad(n.getSeconds());
+      el.querySelector('.rd').textContent = n.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' });
+      const sec = n.getSeconds();
+      el.querySelectorAll('.tk').forEach((t, i) => t.setAttribute('opacity', i === sec ? 1 : i < sec ? .7 : .22));
+      const vals = sys ? [sys.cpu, sys.mem_total ? sys.mem_used / sys.mem_total * 100 : 0, sys.gpu ?? 0, sys.vram_total ? sys.vram_used / sys.vram_total * 100 : 0] : [0, 0, 0, 0];
+      el.querySelectorAll('.gv').forEach((p, i) => p.style.strokeDasharray = clamp(vals[i], 0, 100).toFixed(1) + ' 100');
+      const lg = el.querySelectorAll('.lg');
+      lg[0].textContent = sys ? `CPU  ${sys.cpu.toFixed(0)}%${sys.cpu_temp != null ? '  ' + sys.cpu_temp.toFixed(0) + '°C' : ''}` : 'brak danych';
+      lg[1].textContent = sys ? `RAM  ${gb(sys.mem_used)}/${gb(sys.mem_total)} GB` : '';
+      lg[2].textContent = sys && sys.gpu != null ? `GPU  ${sys.gpu}%${sys.gpu_temp != null ? '  ' + sys.gpu_temp.toFixed(0) + '°C' : ''}` : '';
+      lg[3].textContent = sys && sys.vram_total ? `VRAM ${gb(sys.vram_used)}/${gb(sys.vram_total)} GB` : '';
+      el.querySelector('.rxglow').setAttribute('opacity', (.22 + vals[0] / 100 * .5).toFixed(2));
+    } },
+  { id: 'progress', name: 'Postęp czasu', x: .06, y: .38, on: true,
+    html: () => '<div class="bars">' + ['dzień', 'tydzień', 'miesiąc', 'rok'].map(k => `<div class="bar"><span><em>${k}</em><em class="pv"></em></span><i><b></b></i></div>`).join('') + '</div>',
+    update(n, el){
+      const s = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds(), wd = (n.getDay() + 6) % 7;
+      const dim = new Date(n.getFullYear(), n.getMonth() + 1, 0).getDate(), y0 = new Date(n.getFullYear(), 0, 1), y1 = new Date(n.getFullYear() + 1, 0, 1);
+      const v = [s / 86400, (wd * 86400 + s) / 604800, ((n.getDate() - 1) * 86400 + s) / (dim * 86400), (n - y0) / (y1 - y0)];
+      el.querySelectorAll('.bar').forEach((b, i) => { b.querySelector('b').style.width = (v[i] * 100).toFixed(2) + '%'; b.querySelector('.pv').textContent = Math.round(v[i] * 100) + '%'; });
+    } },
+  { id: 'week', name: 'Dni tygodnia', x: .06, y: .63, on: true,
+    html: () => '<div class="wk">' + DAYS.map(d => `<div>${d}</div>`).join('') + '</div>',
+    update(n, el){ const wd = (n.getDay() + 6) % 7; [...el.querySelector('.wk').children].forEach((c, i) => c.classList.toggle('today', i === wd)); } },
+  { id: 'claude', name: 'Użycie Claude', x: .06, y: .74, on: true,
+    html: () => '<div class="bars"><div class="bar"><span><em>claude · 5h</em><em class="ct">–</em></span><i><b></b></i></div><div class="bar"><span><em>claude · 7d</em><em class="ct">–</em></span><i><b></b></i></div></div>',
+    update(n, el){
+      const stale = !usage || !(Date.now() - Date.parse(usage.updated_at) < 15 * 60000);
+      el.classList.toggle('stale', stale);
+      [...el.querySelectorAll('.bar')].forEach((b, i) => {
+        const w = usage && (i ? usage.seven_day : usage.five_hour), pct = w && typeof w.used_percentage === 'number' ? w.used_percentage : null;
+        const bb = b.querySelector('b'); bb.style.width = (pct === null ? 0 : pct) + '%'; bb.classList.toggle('hot', pct !== null && pct >= 80);
+        let left = ''; if (w && w.resets_at){ const m = Math.round((Date.parse(w.resets_at) - Date.now()) / 60000), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60); left = m <= 0 ? 'reset' : d ? `${d}d ${h}h` : h ? `${h}h ${m % 60}m` : `${m}m`; }
+        b.querySelector('.ct').textContent = pct === null ? '–' : Math.round(pct) + '%' + (left ? ' · ' + left : '');
+      });
+    } },
+  { id: 'system', name: 'System', x: .76, y: .08, on: true, cls: 'sysw',
+    html: () => '<div class="sys-empty">brak danych</div>',
+    update(n, el){ el.classList.toggle('stale', !sys || Date.now() - sys.t > 15000); } },
+  { id: 'calendar', name: 'Kalendarz', x: .78, y: .52, on: true, cls: 'cal',
+    html: () => '', update(n, el){
+      const key = n.getFullYear() + '-' + n.getMonth() + '-' + n.getDate(); if (el._k === key) return; el._k = key;
+      const y = n.getFullYear(), m = n.getMonth(), first = (new Date(y, m, 1).getDay() + 6) % 7, dim = new Date(y, m + 1, 0).getDate();
+      let h = `<div class="cal-h">${MONTHS[m]} ${y}</div><div class="cal-g">` + DAYS.map(d => `<b>${d}</b>`).join('');
+      for (let i = 0; i < first; i++) h += '<i></i>';
+      for (let d = 1; d <= dim; d++) h += `<span class="${d === n.getDate() ? 'today' : ''}">${d}</span>`;
+      el.innerHTML = h + '</div>';
+    } },
+  { id: 'pomo', name: 'Pomodoro', x: .42, y: .66, on: false, cls: 'pomow',
+    html: () => `<div class="pm"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="pr0"/><circle cx="50" cy="50" r="42" class="pr1" stroke-dasharray="263.9" stroke-dashoffset="0" transform="rotate(-90 50 50)"/></svg><div class="pt"><b>25:00</b><small>fokus</small></div></div><div class="pbtns"><button class="btn pgo">Start</button><button class="btn prs">Reset</button><button class="btn pmd">Tryb</button></div>`,
+    init(el){
+      if (!state.pomo) state.pomo = { mode: 'focus', run: false, endAt: 0, left: POMO.focus };
+      const p = state.pomo, rst = () => { p.run = false; p.left = POMO[p.mode]; save(); this.update(new Date(), el); };
+      el.querySelector('.pgo').addEventListener('click', () => { if (p.run){ p.left = Math.max(0, p.endAt - Date.now()); p.run = false; } else { p.endAt = Date.now() + p.left; p.run = true; } save(); this.update(new Date(), el); });
+      el.querySelector('.prs').addEventListener('click', rst);
+      el.querySelector('.pmd').addEventListener('click', () => { p.mode = p.mode === 'focus' ? 'break' : 'focus'; rst(); });
+    },
+    update(n, el){
+      const p = state.pomo; if (!p) return;
+      if (p.run && Date.now() >= p.endAt){ p.run = false; p.mode = p.mode === 'focus' ? 'break' : 'focus'; p.left = POMO[p.mode]; save(); beep(); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 3200); }
+      const rem = p.run ? Math.max(0, p.endAt - Date.now()) : p.left, s = Math.ceil(rem / 1000);
+      el.querySelector('.pt b').textContent = `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
+      el.querySelector('.pt small').textContent = p.mode === 'focus' ? 'fokus' : 'przerwa';
+      el.querySelector('.pr1').style.strokeDashoffset = (263.9 * (1 - rem / POMO[p.mode])).toFixed(1);
+      el.querySelector('.pgo').textContent = p.run ? 'Pauza' : 'Start';
+    } },
+  { id: 'todo', name: 'Zadania', x: .42, y: .08, on: false, cls: 'todow',
+    html: () => '<ul class="td"></ul><input class="tin" maxlength="60" placeholder="+ nowe zadanie" spellcheck="false">',
+    init(el){
+      const ul = el.querySelector('.td'), inp = el.querySelector('.tin');
+      const draw = () => { ul.innerHTML = state.todo.map((t, i) => `<li class="${t.done ? 'done' : ''}" data-i="${i}"><span>${esc(t.t)}</span><button class="x" data-x="${i}">×</button></li>`).join(''); };
+      draw();
+      ul.addEventListener('click', e => {
+        const x = e.target.closest('[data-x]');
+        if (x){ state.todo.splice(+x.dataset.x, 1); save(); draw(); return; }
+        const li = e.target.closest('li'); if (li){ const t = state.todo[+li.dataset.i]; t.done = !t.done; save(); draw(); }
+      });
+      inp.addEventListener('keydown', e => {
+        e.stopPropagation();
+        if (e.key === 'Enter' && inp.value.trim() && state.todo.length < 10){ state.todo.push({ t: inp.value.trim(), done: false }); inp.value = ''; save(); draw(); }
+      });
+    } },
+  { id: 'countdown', name: 'Odliczanie', x: .62, y: .66, on: false, cls: 'cdw',
+    html: () => '<div class="cd-n">–</div><div class="cd-l"></div><div class="cd-e"><input class="cd-t" maxlength="30" placeholder="Wydarzenie" spellcheck="false"><input class="cd-d" maxlength="10" placeholder="RRRR-MM-DD" spellcheck="false"></div>',
+    init(el){
+      const t = el.querySelector('.cd-t'), d = el.querySelector('.cd-d'); t.value = state.cd.label; d.value = state.cd.date;
+      [t, d].forEach(i => i.addEventListener('keydown', e => e.stopPropagation()));
+      t.addEventListener('input', () => { state.cd.label = t.value; save(); this.update(new Date(), el); });
+      d.addEventListener('input', () => { state.cd.date = d.value; save(); this.update(new Date(), el); });
+    },
+    update(n, el){
+      const ms = Date.parse(state.cd.date + 'T00:00:00'), days = Math.ceil((ms - n) / 86400000);
+      el.querySelector('.cd-n').textContent = isNaN(ms) ? '–' : String(Math.max(0, days));
+      el.querySelector('.cd-l').textContent = isNaN(ms) ? 'podaj datę' : (days > 0 ? 'dni do · ' : days === 0 ? 'dziś · ' : 'minęło · ') + state.cd.label;
+    } }
+];
+
+/* Each scene may own its widget layout (state.sc[name]); otherwise the global one in `state` is used. */
+const clone = v => JSON.parse(JSON.stringify(v));
+const cfg = () => (cur && state.sc[cur.name]) || state;
+const isOn = id => cfg().widgets[id] ?? WIDGETS.find(w => w.id === id).on;
+const getPos = w => { const L = cfg().layout; return L[w.id] || (L[w.id] = { x: w.x, y: w.y, s: 1 }); };
+function place(w){
+  const p = getPos(w);
+  w.box.style.left = (p.x * 100).toFixed(2) + '%'; w.box.style.top = (p.y * 100).toFixed(2) + '%';
+  w.box.style.transform = `scale(${(p.s * state.dscale / 100).toFixed(3)})`;
+}
+function makeCfg(scene, fromPreset){
+  if (fromPreset && scene.preset){
+    const widgets = {}; WIDGETS.forEach(w => widgets[w.id] = scene.preset.on.includes(w.id));
+    return { layout: clone(scene.preset.layout || {}), widgets };
+  }
+  const c = cfg(); return { layout: clone(c.layout), widgets: clone(c.widgets) };
+}
+function resetCfg(){
+  if (cur && state.sc[cur.name]) state.sc[cur.name] = cur.preset ? makeCfg(cur, true) : { layout: {}, widgets: clone(state.sc[cur.name].widgets) };
+  else state.layout = {};
+}
+function setOwn(on){
+  if (!cur) return;
+  if (on) state.sc[cur.name] = makeCfg(cur, false); else delete state.sc[cur.name];
+  save(); onSceneChange();
+}
+function onSceneChange(){
+  document.body.classList.toggle('hud', !!(cur && cur.hud));
+  if (cur && cur.preset && !state.scSeen[cur.name]){ state.sc[cur.name] = makeCfg(cur, true); state.scSeen[cur.name] = true; save(); }
+  const t = $('tOwn'); if (t) t.classList.toggle('on', !!(cur && state.sc[cur.name]));
+  if (WIDGETS[0].box){ refreshWidgetToggles(); applyLook(); updateAll(); }
+}
+function sysHtml(){
+  if (!sys) return '<div class="sys-empty">brak danych · uruchom scp-sysstats</div>';
+  const m = sys.mem_total ? sys.mem_used / sys.mem_total * 100 : 0;
+  let h = `<div class="srow"><span>CPU</span><em>${sys.cpu.toFixed(0)}%${sys.cpu_temp != null ? ' · ' + sys.cpu_temp.toFixed(0) + '°' : ''}</em></div>${sbar(sys.cpu, sys.cpu > 85)}${spark(hist.cpu, 100)}`;
+  h += `<div class="srow"><span>RAM</span><em>${gb(sys.mem_used)} / ${gb(sys.mem_total)} GB</em></div>${sbar(m, m > 90)}`;
+  if (sys.gpu != null){
+    h += `<div class="srow"><span>GPU</span><em>${sys.gpu}%${sys.gpu_temp != null ? ' · ' + sys.gpu_temp.toFixed(0) + '°' : ''}</em></div>${sbar(sys.gpu, sys.gpu > 90)}`;
+    if (sys.vram_total) h += `<div class="srow sm"><span>VRAM</span><em>${gb(sys.vram_used)} / ${gb(sys.vram_total)} GB</em></div>${sbar(sys.vram_used / sys.vram_total * 100, false)}`;
+  }
+  if (sys.net) h += `<div class="srow"><span>NET ${esc(sys.net.iface)}</span><em>↓ ${rate(sys.net.rx)} · ↑ ${rate(sys.net.tx)}</em></div>${spark(hist.rx, Math.max(1048576, ...hist.rx))}`;
+  (sys.disks || []).forEach(d => { const p = d.used / d.total * 100; h += `<div class="srow sm"><span>${esc(d.mount)}</span><em>${(d.used / 1e9).toFixed(0)} / ${(d.total / 1e9).toFixed(0)} GB</em></div>${sbar(p, p > 92)}`; });
+  return h + `<div class="srow sm"><span>load ${sys.load.map(v => v.toFixed(1)).join(' ')}</span><em>up ${upt(sys.uptime)}</em></div>`;
+}
+function loadSys(){
+  xhr('file:///home/scplegion/.cache/scp-center/sysstats.json', d => {
+    sys = d;
+    if (d){ hist.cpu.push(d.cpu); if (d.net) hist.rx.push(d.net.rx); hist.cpu = hist.cpu.slice(-60); hist.rx = hist.rx.slice(-60); }
+    const w = WIDGETS.find(x => x.id === 'system'); if (w.el && isOn('system')) w.el.innerHTML = sysHtml();
+    updateAll();
+  });
+}
+const loadUsage = () => xhr('file:///home/scplegion/.cache/scp-center/claude-usage.json', d => { usage = d; });
+
+function updateAll(){
+  const n = new Date();
+  WIDGETS.forEach(w => { if (w.el && w.update && isOn(w.id)) w.update(n, w.el); });
+}
+function refreshWidgetToggles(){
+  document.querySelectorAll('#wlist [data-w]').forEach(b => b.classList.toggle('on', isOn(b.dataset.w)));
+  WIDGETS.forEach(w => w.box && w.box.classList.toggle('off', !isOn(w.id)));
+}
+function setWidget(id, on){ cfg().widgets[id] = on; refreshWidgetToggles(); updateAll(); save(); }
+function setDash(on){ state.dash = on; dash.classList.toggle('hidden', !on); $('tDash').classList.toggle('on', on); save(); }
+function setEdit(on){
+  document.body.classList.toggle('editing', on); $('tEdit').classList.toggle('on', on);
+  if (on){ document.body.classList.remove('menu-open'); if (!state.dash) setDash(true); }
+}
+function applyLook(){
+  document.body.classList.remove('wbg-none', 'wbg-scrim', 'wbg-glass'); document.body.classList.add('wbg-' + state.wbg);
+  WIDGETS.forEach(w => w.box && place(w));
+}
+
+/* edit mode: drag to move, corner handle or wheel to scale */
+let drag = null;
+dash.addEventListener('pointerdown', e => {
+  if (!editing()) return; const box = e.target.closest('.w'); if (!box) return;
+  e.preventDefault(); const w = WIDGETS.find(x => x.id === box.dataset.id), p = getPos(w), r = box.getBoundingClientRect();
+  drag = { w, box, sx: e.clientX, sy: e.clientY, ox: p.x, oy: p.y, resize: !!e.target.closest('.rz'), left0: r.left, w0: box.offsetWidth };
+  box.setPointerCapture(e.pointerId); box.classList.add('drag');
+});
+dash.addEventListener('pointermove', e => {
+  if (!drag) return; const p = getPos(drag.w);
+  if (drag.resize){
+    let sc = clamp((e.clientX - drag.left0) / (drag.w0 * state.dscale / 100), .4, 3.5);
+    if (!e.shiftKey) sc = Math.round(sc * 20) / 20;
+    p.s = sc; place(drag.w); return;
+  }
+  let x = clamp(drag.ox + (e.clientX - drag.sx) / innerWidth, -.02, .98), y = clamp(drag.oy + (e.clientY - drag.sy) / innerHeight, -.02, .98);
+  if (!e.shiftKey){ x = Math.round(x * 200) / 200; y = Math.round(y * 200) / 200; }
+  p.x = x; p.y = y; place(drag.w);
+});
+const endDrag = () => { if (!drag) return; drag.box.classList.remove('drag'); drag = null; save(); };
+dash.addEventListener('pointerup', endDrag); dash.addEventListener('pointercancel', endDrag);
+dash.addEventListener('wheel', e => {
+  if (!editing()) return; const box = e.target.closest('.w'); if (!box) return; e.preventDefault();
+  const w = WIDGETS.find(x => x.id === box.dataset.id), p = getPos(w); p.s = clamp(p.s * (e.deltaY < 0 ? 1.06 : 1 / 1.06), .4, 3.5); place(w); save();
+}, { passive: false });
+dash.addEventListener('click', e => e.stopPropagation());
+dash.addEventListener('contextmenu', e => e.stopPropagation());
+
+/* saved layouts: positions, sizes, visible widgets and look, three slots */
+const SLOT_KEYS = ['layout', 'widgets', 'dscale', 'wbg', 'h24', 'secs'];
+function syncOptionUI(){
+  $('tH24').classList.toggle('on', state.h24); $('tSecs').classList.toggle('on', state.secs);
+  $('dsize').value = state.dscale; $('wbg').value = state.wbg;
+}
+function drawSlots(){
+  const box = $('slots'); box.innerHTML = '';
+  for (let i = 0; i < 3; i++){
+    const filled = !!state.slots[i], r = document.createElement('div'); r.className = 'row' + (state.slot === i ? ' cur' : '');
+    r.innerHTML = `<span>Układ ${i + 1}${filled ? '' : ' · pusty'}</span><div class="slot-b"><button class="btn" data-l="${i}" ${filled ? '' : 'disabled'}>Wczytaj</button><button class="btn" data-s="${i}">Zapisz</button></div>`;
+    box.appendChild(r);
+  }
+}
+const slotGet = k => (k === 'layout' || k === 'widgets') ? cfg()[k] : state[k];
+const slotSet = (k, v) => { if (k === 'layout' || k === 'widgets') cfg()[k] = v; else state[k] = v; };
+function saveSlot(i){
+  const snap = {}; SLOT_KEYS.forEach(k => snap[k] = clone(slotGet(k)));
+  state.slots[i] = snap; state.slot = i; save(); drawSlots();
+}
+function loadSlot(i){
+  const snap = state.slots[i]; if (!snap) return;
+  SLOT_KEYS.forEach(k => slotSet(k, clone(snap[k])));
+  state.slot = i; save(); syncOptionUI(); refreshWidgetToggles(); applyLook(); updateAll(); drawSlots();
+}
+$('slots').addEventListener('click', e => {
+  e.stopPropagation(); const b = e.target.closest('button'); if (!b || b.disabled) return;
+  if (b.dataset.s !== undefined) saveSlot(+b.dataset.s); else if (b.dataset.l !== undefined) loadSlot(+b.dataset.l);
+});
+
+function initDash(){
+  dash.innerHTML = '';
+  WIDGETS.forEach(w => {
+    const box = document.createElement('div'); box.className = 'w ' + (w.cls || ''); box.id = w.id + '-w'; box.dataset.id = w.id; box.dataset.name = w.name;
+    const el = document.createElement('div'); el.className = 'wc'; el.innerHTML = w.html();
+    const rz = document.createElement('i'); rz.className = 'rz'; rz.title = 'Rozmiar';
+    box.append(el, rz); dash.appendChild(box); w.box = box; w.el = el; if (w.init) w.init(el);
+  });
+  const wl = $('wlist');
+  WIDGETS.forEach(w => { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = `<span>${w.name}</span><button class="sw-toggle" data-w="${w.id}" aria-label="${w.name}"></button>`; wl.appendChild(r); });
+  wl.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if (b) setWidget(b.dataset.w, !isOn(b.dataset.w)); });
+
+  const bind = (id, get, set) => { const b = $(id); b.classList.toggle('on', get()); b.addEventListener('click', e => { e.stopPropagation(); set(!get()); b.classList.toggle('on', get()); }); };
+  bind('tDash', () => state.dash, v => setDash(v));
+  bind('tH24', () => state.h24, v => { state.h24 = v; save(); updateAll(); });
+  bind('tSecs', () => state.secs, v => { state.secs = v; save(); updateAll(); });
+  bind('tEdit', () => editing(), v => setEdit(v));
+  bind('tOwn', () => !!(cur && state.sc[cur.name]), v => setOwn(v));
+  $('dsize').value = state.dscale; $('dsize').addEventListener('input', e => { state.dscale = +e.target.value; save(); applyLook(); });
+  $('dsize').addEventListener('click', e => e.stopPropagation());
+  $('wbg').value = state.wbg; $('wbg').addEventListener('change', e => { state.wbg = e.target.value; save(); applyLook(); });
+  $('wbg').addEventListener('click', e => e.stopPropagation());
+  $('resetLayout').addEventListener('click', e => { e.stopPropagation(); resetCfg(); state.dscale = 100; $('dsize').value = 100; state.slot = -1; save(); refreshWidgetToggles(); applyLook(); drawSlots(); });
+  $('editdone').addEventListener('click', () => setEdit(false));
+
+  drawSlots(); setTab(state.tab); refreshWidgetToggles(); applyLook(); setDash(state.dash);
+  if (params.has('edit')) setEdit(true);
+  updateAll(); setInterval(updateAll, 1000);
+  loadUsage(); loadSys(); setInterval(loadUsage, 20000); setInterval(loadSys, 2000);
+}
+
+
+/* ---------------- main loop (30 fps, only scenes that animate) ---------------- */
+let last = 0, tPrev = 0;
+function frame(now){
+  requestAnimationFrame(frame);
+  if (now - last < 1000 / 30 - 1) return;
+  const t = now / 1000, dt = Math.min(.2, t - tPrev); tPrev = t; last = now;
+  if (cur && cur.tick && !busy) cur.tick(t, dt);
+}
+
+initDash();
+show(state.scene);
+armAuto();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

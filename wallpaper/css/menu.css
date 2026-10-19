@@ -1,0 +1,39 @@
+/* Menu panel, tabs, toggles, edit bar. */
+  /* ---------- menu ---------- */
+  #menubtn { position: fixed; right: 2.4vh; bottom: 2.4vh; width: 4.6vh; height: 4.6vh; min-width: 34px; min-height: 34px; border-radius: 50%; border: 1px solid var(--line);
+    background: rgba(14,15,20,.35); color: var(--fg); cursor: pointer; opacity: .28; transition: opacity .2s, background .2s; display: grid; place-items: center; padding: 0; backdrop-filter: blur(8px); }
+  #menubtn:hover, body.menu-open #menubtn { opacity: 1; background: rgba(14,15,20,.7); }
+  #menubtn svg { width: 46%; height: 46%; }
+  #menu { position: fixed; right: 2.4vh; bottom: calc(2.4vh + 6vh); width: min(360px, 90vw); max-height: 80vh; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+    padding: 20px; backdrop-filter: blur(22px) saturate(1.2); box-shadow: 0 20px 60px rgba(0,0,0,.45); opacity: 0; transform: translateY(10px) scale(.98); pointer-events: none; transition: opacity .2s, transform .2s; }
+  body.menu-open #menu { opacity: 1; transform: none; pointer-events: auto; }
+  #menu { scrollbar-width: none; }
+  #menu::-webkit-scrollbar { display: none; }
+  #menu h2 { margin: 0 0 14px; font-size: 11px; font-weight: 500; letter-spacing: .22em; text-transform: uppercase; color: var(--fg-dim); }
+  #menu h2:not(:first-child) { margin-top: 22px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .scene { position: relative; border: 1px solid var(--line); border-radius: 12px; padding: 0; background: none; cursor: pointer; color: var(--fg); overflow: hidden; text-align: left; font: inherit; }
+  .scene .sw { height: 36px; }
+  .scene .nm { display: block; padding: 8px 10px; font-size: 12px; letter-spacing: .04em; }
+  .scene:hover { border-color: rgba(255,255,255,.35); }
+  .scene.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; font-size: 13px; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .sw-toggle { width: 38px; height: 22px; border-radius: 11px; background: var(--line); position: relative; cursor: pointer; border: 0; padding: 0; transition: background .2s; }
+  .sw-toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--fg); transition: transform .2s; }
+  .sw-toggle.on { background: var(--accent); }
+  .sw-toggle.on::after { transform: translateX(16px); }
+  select, .btn { background: rgba(255,255,255,.06); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 12px; padding: 6px 10px; cursor: pointer; }
+  select option { background: #14151b; color: var(--fg); }
+  .btn:hover, select:hover { border-color: rgba(255,255,255,.35); }
+  .hint { margin-top: 18px; font-size: 11px; line-height: 1.7; color: var(--fg-dim); }
+  .hint kbd { font: inherit; padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; margin-right: 2px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .tab { flex: 1; background: none; border: 1px solid var(--line); border-radius: 9px; color: var(--fg-dim); font: inherit; font-size: 12px; letter-spacing: .08em; padding: 8px 0; cursor: pointer; }
+  .tab.active { color: var(--fg); border-color: var(--accent); }
+  .pane[hidden] { display: none; }
+  .slot-b { display: flex; gap: 6px; }
+  .btn:disabled { opacity: .35; cursor: default; }
+  .row.cur span { color: var(--accent); }
+
+  input[type=range] { width: 130px; accent-color: var(--accent); }

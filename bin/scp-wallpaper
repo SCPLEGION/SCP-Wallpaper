@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Everyday control for the SCP wallpaper project.   scp-wallpaper help
+set -u
+ROOT=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
+CACHE=$HOME/.cache/scp-center
+INIR_CFG=$HOME/.config/illogical-impulse/config.json
+
+age() {  # seconds since a file was modified, or "-"
+  [ -f "$1" ] && echo "$(( $(date +%s) - $(stat -c %Y "$1") ))s ago" || echo "missing"
+}
+
+cmd_status() {
+  echo "Project   $ROOT"
+  python3 -I - "$INIR_CFG" <<'PY' 2>/dev/null || echo "iNiR config unreadable"
+import json, sys
+b = json.load(open(sys.argv[1])).get("background", {}).get("backend", {})
+w = b.get("web", {})
+print(f"iNiR      provider={b.get('provider')}  interactive={w.get('interactive')}\n          source={w.get('source')}")
+PY
+  echo "Services"
+  for u in scp-sysstats scp-audioviz; do printf '  %-16s %s\n' "$u" "$(systemctl --user is-active $u.service 2>&1)"; done
+  echo "Data files"
+  for f in sysstats audio claude-usage; do printf '  %-16s updated %s\n' "$f.json" "$(age "$CACHE/$f.json")"; done
+  echo "  (claude-usage.json is only refreshed while a Claude Code session runs; audio.json while the equalizer scene is idle it still updates)"
+  echo "Layer surfaces (expect one inir:web-wallpaper per output)"
+  niri msg layers 2>/dev/null | awk '/^Output/ {o=$2} /web-wallpaper/ {print "  " o " web-wallpaper"}' | sort | uniq -c | sed 's/^/ /'
+  echo "iNiR patches"
+  "$ROOT/patches/apply.sh" --check | sed 's/^/  /'
+}
+
+cmd_reload() {   # hosts are children of the shell: restarting it reloads the page
+  pkill -x qs 2>/dev/null; sleep 2
+  (setsid inir run >/tmp/scp-wallpaper-inir.log 2>&1 &)
+  echo "shell restarted, waiting for the hosts..."; sleep 14
+  niri msg layers 2>/dev/null | awk '/^Output/ {o=$2} /web-wallpaper/ {print "  " o ": ok"}'
+}
+
+cmd_scenes() {
+  i=0; for f in "$ROOT"/wallpaper/js/scenes/[0-9]*.js; do
+    printf '%2d  %s\n' "$i" "$(sed -n 1p "$f" | sed 's#^// ##')"; i=$((i+1)); done
+  echo; echo "widgets:"; for f in "$ROOT"/wallpaper/js/widgets/[0-9]*.js; do printf '    %s\n' "$(basename "$f" .js | sed 's/^[0-9]*-//')"; done
+}
+
+cmd_logs() { journalctl --user -u scp-sysstats -u scp-audioviz -n "${1:-30}" --no-pager; }
+
+case ${1:-help} in
+  status)  cmd_status ;;
+  reload)  cmd_reload ;;
+  scenes)  cmd_scenes ;;
+  check)   exec "$ROOT/tools/check.sh" ;;
+  preview) shift; exec "$ROOT/tools/preview.sh" "$@" ;;
+  patch)   shift; exec "$ROOT/patches/apply.sh" "$@" ;;
+  logs)    shift; cmd_logs "$@" ;;
+  install) shift; exec "$ROOT/install.sh" "$@" ;;
+  edit)    ${EDITOR:-nano} "$ROOT/wallpaper/js/app/dashboard.js" ;;
+  help|-h|--help|*)
+    cat <<H
+scp-wallpaper <command>
+
+  status            what is running, which page iNiR shows, data freshness, patch state
+  reload            restart the iNiR shell so the hosts reload the page (needed after editing wallpaper/)
+  scenes            list scenes (0-based index = menu order) and widgets
+  preview N [png]   render scene N offscreen (SEED=… and a 3rd arg of hash params are supported)
+  check             syntax + index.html consistency + shader + smoke test of every scene/widget
+  patch [--check]   (re)apply the local iNiR patches, e.g. after ./setup update
+  logs [N]          journal of the helper services
+  install [flags]   (re)do the installation (links, services, iNiR config, patches)
+
+Docs: $ROOT/README.md and $ROOT/docs/
+H
+    ;;
+esac

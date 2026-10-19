@@ -1,0 +1,34 @@
+diff --git a/modules/common/Config.qml b/modules/common/Config.qml
+index 332a9325..0c001021 100644
+--- a/modules/common/Config.qml
++++ b/modules/common/Config.qml
+@@ -2956,6 +2956,7 @@ Singleton {
+ 
+             property JsonObject lock: JsonObject {
+                 property bool useHyprlock: false
++                property string onlyOnScreen: "" // output name (e.g. DP-2); other outputs get a blank lock surface
+                 property bool launchOnStartup: false
+                 property JsonObject blur: JsonObject {
+                     property bool enable: true
+diff --git a/modules/lock/Lock.qml b/modules/lock/Lock.qml
+index 634abafa..ca65a7a1 100644
+--- a/modules/lock/Lock.qml
++++ b/modules/lock/Lock.qml
+@@ -283,6 +283,8 @@ Scope {
+             Loader {
+                 id: lockSurfaceLoader
+                 active: GlobalStates.screenLocked && Config.ready
++                    && ((Config.options?.lock?.onlyOnScreen ?? "") === ""
++                        || (lockSurface.screen?.name ?? "") === Config.options.lock.onlyOnScreen)
+                 // The iRiS lock arrives from the wallpaper; an async first frame is a bare colour flash.
+                 asynchronous: !root._cachedUseIrisLock
+                 anchors.fill: parent
+@@ -338,7 +340,7 @@ Scope {
+             Timer {
+                 id: fallbackTimer
+                 interval: 2000
+-                running: GlobalStates.screenLocked && !lockSurfaceLoader.item && lockSurfaceLoader.status !== Loader.Loading
++                running: GlobalStates.screenLocked && lockSurfaceLoader.active && !lockSurfaceLoader.item && lockSurfaceLoader.status !== Loader.Loading
+                 onTriggered: {
+                     console.warn("[Lock] Lock surface failed to load after 2s — status:",
+                                  lockSurfaceLoader.status, "active:", lockSurfaceLoader.active,
