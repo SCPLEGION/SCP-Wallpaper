@@ -21,9 +21,9 @@ PY
   for u in scp-sysstats scp-audioviz; do printf '  %-16s %s\n' "$u" "$(systemctl --user is-active $u.service 2>&1)"; done
   echo "Data files"
   for f in sysstats audio claude-usage; do printf '  %-16s updated %s\n' "$f.json" "$(age "$CACHE/$f.json")"; done
-  echo "  (claude-usage.json is only refreshed while a Claude Code session runs; audio.json while the equalizer scene is idle it still updates)"
+  echo "  (claude-usage.json only refreshes while a Claude Code session is running)"
   echo "Layer surfaces (expect one inir:web-wallpaper per output)"
-  niri msg layers 2>/dev/null | awk '/^Output/ {o=$2} /web-wallpaper/ {print "  " o " web-wallpaper"}' | sort | uniq -c | sed 's/^/ /'
+  niri msg layers 2>/dev/null | awk '/^Output/ {o=$2; gsub(/[":]/, "", o)} /web-wallpaper/ {print "  " o ": web-wallpaper"}' | sort -u
   echo "iNiR patches"
   "$ROOT/patches/apply.sh" --check | sed 's/^/  /'
 }
@@ -32,7 +32,7 @@ cmd_reload() {   # hosts are children of the shell: restarting it reloads the pa
   pkill -x qs 2>/dev/null; sleep 2
   (setsid inir run >/tmp/scp-wallpaper-inir.log 2>&1 &)
   echo "shell restarted, waiting for the hosts..."; sleep 14
-  niri msg layers 2>/dev/null | awk '/^Output/ {o=$2} /web-wallpaper/ {print "  " o ": ok"}'
+  niri msg layers 2>/dev/null | awk '/^Output/ {o=$2; gsub(/[":]/, "", o)} /web-wallpaper/ {print "  " o ": ok"}'
 }
 
 cmd_scenes() {
