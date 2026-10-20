@@ -16,33 +16,16 @@ SCENES.push({
   },
   after(){
     cvInit(this, 1);
-    const r = rng(this.seed), N = 9000, off = r() * 100;
-    // 3D value noise -> continents. Land = top 36% of the noise field, so the coverage is the same for every seed.
-    const h3 = (x, y, z) => { const n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7 + off) * 43758.5453; return n - Math.floor(n); };
-    const sm = t => t * t * (3 - 2 * t), lr = (a, b, t) => a + (b - a) * t;
-    const vn = (x, y, z) => {
-      const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z), u = sm(x - ix), v = sm(y - iy), w = sm(z - iz);
-      const c = (a, b, d) => h3(ix + a, iy + b, iz + d);
-      return lr(lr(lr(c(0, 0, 0), c(1, 0, 0), u), lr(c(0, 1, 0), c(1, 1, 0), u), v), lr(lr(c(0, 0, 1), c(1, 0, 1), u), lr(c(0, 1, 1), c(1, 1, 1), u), v), w);
-    };
-    const fb = (x, y, z) => vn(x * 1.6, y * 1.6, z * 1.6) * .55 + vn(x * 3.4, y * 3.4, z * 3.4) * .3 + vn(x * 7.1, y * 7.1, z * 7.1) * .15;
-    const all = [];
-    for (let i = 0; i < N; i++){   // Fibonacci sphere: even dot spacing
-      const y = 1 - 2 * (i + .5) / N, rr = Math.sqrt(1 - y * y), a = i * 2.399963;
-      const x = rr * Math.cos(a), z = rr * Math.sin(a); all.push({ x, y, z, n: fb(x, y, z) });
-    }
-    const thr = all.map(p => p.n).sort((a, b) => a - b)[Math.floor(N * .58)];
-    this.land = all.filter(p => p.n > thr);
-    // cities: well separated land points; arcs link neighbours in the list
-    this.cities = [];
-    for (let tries = 0; tries < 500 && this.cities.length < 15; tries++){
-      const p = this.land[Math.floor(r() * this.land.length)];
-      if (this.cities.every(c => c.x * p.x + c.y * p.y + c.z * p.z < .82)) this.cities.push({ x: p.x, y: p.y, z: p.z, ph: r() * 6.28,
-        code: 'SITE-' + (10 + Math.floor(r() * 80)) + ' ' + ['SAFE', 'EUCLID', 'KETER'][Math.floor(r() * 3)] });
-    }
+    const r = rng(this.seed);
+    // Real geography: land dots come from Natural Earth (data/world.js), beacons from data/sites.js.
+    // y points down on screen, so north is -sin(lat); lon 0 faces the viewer before the spin is applied.
+    const ll2v = (lat, lon) => { const a = rad(lat), o = rad(lon); return { x: Math.cos(a) * Math.sin(o), y: -Math.sin(a), z: Math.cos(a) * Math.cos(o) }; };
+    this.land = [];
+    for (let i = 0; i < WORLD_LAND.length; i += 2) this.land.push(ll2v(WORLD_LAND[i] / 10, WORLD_LAND[i + 1] / 10));
+    this.cities = SITES.map(s => ({ ...ll2v(s.ll[0], s.ll[1]), ph: r() * 6.28, code: s.code + ' ' + s.place.toUpperCase() + ' · ' + s.cls }));
     const nc = this.cities.length, ARC = 26;
     this.arcs = [];
-    for (let k = 0; k < 6; k++){
+    for (let k = 0; k < 7; k++){
       const a = this.cities[k % nc], b = this.cities[(k * 5 + 3) % nc]; if (a === b) continue;
       const dot = Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y + a.z * b.z)), om = Math.acos(dot), so = Math.sin(om) || 1, pts = [];
       for (let i = 0; i <= ARC; i++){
@@ -52,7 +35,8 @@ SCENES.push({
       this.arcs.push({ pts, sp: .12 + r() * .12, ph: r() });
     }
     this.orbits = [[1.3, .9, 0, 28, 1]].map(([rr, inc, node, per, dir]) => ({ rr, inc, node, per, dir, sats: 1, ph: r() * 6.28 }));
-    this.tilt = .38; this.lvl = 0; this.run = true; this.live = false;
+    // negative tilt: the north pole leans toward the viewer
+    this.tilt = -.38; this.lvl = 0; this.run = true; this.live = false;
     const poll = () => {
       if (!this.run) return;
       xhr(PATHS.audio, d => {
@@ -128,7 +112,7 @@ SCENES.push({
       if (q[2] > bz){ bz = q[2]; best = [x, y, c]; }
     }
     if (best){
-      const [x, y, c] = best, lat = Math.asin(c.y) * 57.3, lon = Math.atan2(c.x, c.z) * 57.3, ex = cx + Rg * 1.14, ey = y - Rg * .32;
+      const [x, y, c] = best, lat = Math.asin(c.y) * 57.3, lon = Math.atan2(c.x, c.z) * 57.3, ex = cx + Rg * 1.14, ey = Math.max(cy - Rg * .2, Math.min(cy + Rg * .6, y - Rg * .32));   // clamped so the label stays between the right-hand widgets
       g.strokeStyle = `rgba(${A},.85)`; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 24, ey); g.lineTo(ex, ey); g.stroke(); g.strokeRect(x - 9, y - 9, 18, 18);
       g.fillStyle = `rgba(${A},.9)`; g.font = '13px monospace'; g.fillText(c.code, ex + 8, ey - 7);
     }
