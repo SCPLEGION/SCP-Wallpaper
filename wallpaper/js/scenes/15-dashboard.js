@@ -23,7 +23,7 @@ SCENES.push({
     this.land = [];
     for (let i = 0; i < WORLD_LAND.length; i += 2) this.land.push(ll2v(WORLD_LAND[i] / 10, WORLD_LAND[i + 1] / 10));
     this.cities = SITES.map(s => ({ ...ll2v(s.ll[0], s.ll[1]), ph: r() * 6.28, code: s.code + ' ' + s.place.toUpperCase() + ' · ' + s.cls }));
-    const nc = this.cities.length, ARC = 26;
+    const nc = this.cities.length, ARC = 48;
     this.arcs = [];
     for (let k = 0; k < 7; k++){
       const a = this.cities[k % nc], b = this.cities[(k * 5 + 3) % nc]; if (a === b) continue;
@@ -99,7 +99,16 @@ SCENES.push({
       const P = a.pts.map(q => V(q[0], q[1], q[2]));
       g.strokeStyle = `rgba(${A},.4)`; let pen=false; g.beginPath(); pen = false;
       for (const p of P){ if (p[2] < -.05){ pen = false; continue; } pen ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); pen = true; } g.stroke();
-      const u = (t * a.sp + a.ph) % 1, i = Math.floor(u * (P.length - 1)), p = P[i];
+      // The packet is interpolated between the arc's sample points (stepping from point to point looked jerky) and drags a fading tail.
+      const at = u => { const f = u * (P.length - 1), i = Math.min(P.length - 2, Math.floor(f)), k = f - i, p = P[i], q = P[i + 1]; return [p[0] + (q[0] - p[0]) * k, p[1] + (q[1] - p[1]) * k, p[2] + (q[2] - p[2]) * k]; };
+      const u = (t * a.sp + a.ph) % 1, TAIL = .12;
+      for (let k = 0; k < 8; k++){
+        const u0 = u - TAIL * (k + 1) / 8, u1 = u - TAIL * k / 8; if (u0 < 0) break;
+        const p0 = at(u0), p1 = at(u1); if (p0[2] < 0 || p1[2] < 0) continue;
+        g.strokeStyle = `rgba(255,225,185,${.7 * (1 - k / 8)})`; g.lineWidth = 2; g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]); g.stroke();
+      }
+      g.lineWidth = 1;
+      const p = at(u);
       if (p[2] > 0){ const gl = g.createRadialGradient(p[0], p[1], 0, p[0], p[1], 9); gl.addColorStop(0, 'rgba(255,240,215,.95)'); gl.addColorStop(1, `rgba(${A},0)`); g.fillStyle = gl; g.beginPath(); g.arc(p[0], p[1], 9, 0, 6.2832); g.fill(); }
     }
     // city beacons; the one nearest the view centre gets a callout
