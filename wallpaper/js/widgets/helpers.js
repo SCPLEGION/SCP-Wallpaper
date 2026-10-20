@@ -25,3 +25,24 @@ function beep(){
   try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain();
     o.frequency.value = 880; g.gain.value = .08; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + .35); } catch (e) {}
 }
+
+/* Update `el` to match `html` without recreating nodes. Replacing innerHTML every refresh dropped the per-row transforms of the
+   curved layout (rows jumped back until the next curveWidgets pass) and restarted the bar transitions from 0. Only text, class,
+   bar width and attributes are synced; style.transform is left alone. Falls back to a full replace when the structure changed. */
+function patchHtml(el, html){
+  const t = document.createElement('div'); t.innerHTML = html;
+  const sync = (a, b) => {
+    if (a.childNodes.length !== b.childNodes.length) return false;
+    for (let i = 0; i < a.childNodes.length; i++){
+      const x = a.childNodes[i], y = b.childNodes[i];
+      if (x.nodeType !== y.nodeType || x.nodeName !== y.nodeName) return false;
+      if (x.nodeType === 3){ if (x.nodeValue !== y.nodeValue) x.nodeValue = y.nodeValue; continue; }
+      if (x.nodeType !== 1) continue;
+      for (const at of y.attributes) if (at.name !== 'style' && x.getAttribute(at.name) !== at.value) x.setAttribute(at.name, at.value);
+      if (y.style.width && x.style.width !== y.style.width) x.style.width = y.style.width;
+      if (!sync(x, y)) return false;
+    }
+    return true;
+  };
+  if (!sync(el, t)) el.innerHTML = html;
+}
