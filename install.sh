@@ -19,15 +19,15 @@ say() { printf '\033[1m%s\033[0m\n' "$*"; }
 
 if [ $uninstall = 1 ]; then
   say "Removing services and links"
-  for u in scp-sysstats scp-audioviz; do systemctl --user disable --now $u.service 2>/dev/null || true; rm -f "$UNITS/$u.service"; done
+  for u in scp-sysstats scp-audioviz scp-nowplaying; do systemctl --user disable --now $u.service 2>/dev/null || true; rm -f "$UNITS/$u.service"; done
   systemctl --user daemon-reload || true
-  rm -f "$BIN/scp-sysstats" "$BIN/scp-audioviz" "$BIN/scp-wallpaper"
+  rm -f "$BIN/scp-sysstats" "$BIN/scp-audioviz" "$BIN/scp-nowplaying" "$BIN/scp-wallpaper"
   echo "Left in place: $CACHE, iNiR config, claude-hud config, iNiR patches."; exit 0
 fi
 
 say "Checking requirements"
 miss=0
-for c in python3 parec systemctl; do command -v $c >/dev/null || { echo "  missing: $c"; miss=1; }; done
+for c in python3 parec playerctl systemctl; do command -v $c >/dev/null || { echo "  missing: $c"; miss=1; }; done
 python3 -I -c "import numpy" 2>/dev/null || { echo "  missing: python numpy (needed by scp-audioviz)"; miss=1; }
 command -v qml6 >/dev/null || echo "  note: qml6 not found (iNiR's web wallpaper host needs Qt6 qml + QtWebEngine)"
 [ $miss = 0 ] || { echo "Install the missing packages first."; exit 1; }
@@ -36,15 +36,16 @@ say "Linking commands into $BIN"
 mkdir -p "$BIN" "$CACHE"
 ln -sfn "$ROOT/helpers/scp-sysstats" "$BIN/scp-sysstats"
 ln -sfn "$ROOT/helpers/scp-audioviz" "$BIN/scp-audioviz"
+ln -sfn "$ROOT/helpers/scp-nowplaying" "$BIN/scp-nowplaying"
 ln -sfn "$ROOT/bin/scp-wallpaper"    "$BIN/scp-wallpaper"
 chmod +x "$ROOT"/helpers/* "$ROOT"/bin/* "$ROOT"/tools/*.sh "$ROOT"/patches/apply.sh
 
 if [ $services = 1 ]; then
   say "Installing systemd --user services"
   mkdir -p "$UNITS"
-  for u in scp-sysstats scp-audioviz; do ln -sfn "$ROOT/systemd/$u.service" "$UNITS/$u.service"; done
+  for u in scp-sysstats scp-audioviz scp-nowplaying; do ln -sfn "$ROOT/systemd/$u.service" "$UNITS/$u.service"; done
   systemctl --user daemon-reload
-  systemctl --user enable --now scp-sysstats.service scp-audioviz.service
+  systemctl --user enable --now scp-sysstats.service scp-audioviz.service scp-nowplaying.service
 fi
 
 if [ $inir = 1 ]; then

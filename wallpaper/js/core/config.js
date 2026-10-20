@@ -12,4 +12,5 @@ const PATHS = {
   usage: CACHE_URL + 'claude-usage.json',   // claude-hud plugin (display.externalUsageWritePath)
   sys: CACHE_URL + 'sysstats.json',         // helpers/scp-sysstats
   audio: CACHE_URL + 'audio.json',          // helpers/scp-audioviz
+  nowplaying: CACHE_URL + 'nowplaying.json', // helpers/scp-nowplaying
 };

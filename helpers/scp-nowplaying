@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""Now-playing feed for the SCP wallpaper dashboard.
+
+Asks playerctl (MPRIS) about the active media player once a second and writes
+~/.cache/scp-center/nowplaying.json atomically. A playing player wins over a
+paused one; with no player at all the file says {"status": "none"}.
+
+Read-only: it only queries metadata and never controls playback.
+"""
+import json
+import os
+import subprocess
+import time
+
+INTERVAL = 1.0
+OUT = os.path.expanduser("~/.cache/scp-center/nowplaying.json")
+SEP = "\t"
+FMT = SEP.join("{{%s}}" % k for k in ("playerName", "status", "artist", "title", "album", "mpris:artUrl", "mpris:length", "position"))
+
+
+def query():
+    try:
+        out = subprocess.run(["playerctl", "-a", "metadata", "--format", FMT],
+                             capture_output=True, text=True, timeout=3).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    best = None
+    for line in out.splitlines():
+        p = line.split(SEP)
+        if len(p) != 8 or not p[3]:
+            continue
+        rank = {"Playing": 0, "Paused": 1}.get(p[1], 2)
+        if best is None or rank < best[0]:
+            best = (rank, p)
+    if best is None:
+        return None
+    _, (player, status, artist, title, album, art, length, pos) = best
+    num = lambda s: int(s) / 1e6 if s.lstrip("-").isdigit() else 0.0
+    return {"player": player, "status": status.lower(), "artist": artist, "title": title, "album": album,
+            "art": art, "length": round(num(length), 2), "position": round(num(pos), 2)}
+
+
+def write(snap):
+    tmp = OUT + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(snap, f)
+    os.replace(tmp, OUT)
+
+
+def main():
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    last = None
+    while True:
+        snap = query() or {"status": "none"}
+        snap["t"] = int(time.time() * 1000)
+        write(snap)
+        time.sleep(INTERVAL)
+
+
+if __name__ == "__main__":
+    main()

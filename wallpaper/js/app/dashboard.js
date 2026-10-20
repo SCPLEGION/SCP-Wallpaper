@@ -143,6 +143,7 @@ function initDash(){
   if (params.has('edit')) setEdit(true);
   updateAll(); setInterval(updateAll, 1000);
   loadUsage(); loadSys(); setInterval(loadUsage, 20000); setInterval(loadSys, 2000);
+  loadNp(); setInterval(loadNp, 1000);
 }
 
 /* Curved layout: a scene with `curved: true` publishes its globe as cur.geo = {cx, cy, Rc}. Rows of every widget on the left/right of it are

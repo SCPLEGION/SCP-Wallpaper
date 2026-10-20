@@ -29,6 +29,13 @@
   .wk div.today::after { background: var(--accent); border-color: var(--accent); }
 
   .sysw { width: 22em; }
+  .npw { width: 22em; }
+  .np-main { display: flex; gap: .9em; align-items: center; margin-bottom: .9em; }
+  .np-art { width: 5em; height: 5em; object-fit: cover; border-radius: .3em; flex: none; }
+  .np-txt { display: flex; flex-direction: column; min-width: 0; gap: .25em; }
+  .np-txt b { font-size: 1.05em; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .np-txt span { font-size: .85em; color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .np-txt .dim { font-size: .75em; opacity: .7; }
   .srow { display: flex; justify-content: space-between; align-items: baseline; font-size: .86em; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-dim); margin-top: .85em; }
   .srow em { letter-spacing: .04em; text-transform: none; color: var(--fg); }
   .srow.sm { font-size: .75em; margin-top: .65em; }

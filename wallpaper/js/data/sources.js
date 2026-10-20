@@ -1,7 +1,7 @@
 // Live data the widgets read: Claude usage and system stats (refreshed by initDash).
 'use strict';
 
-let usage = null, sys = null; const hist = { cpu: [], rx: [] };
+let usage = null, sys = null, np = null; const hist = { cpu: [], rx: [] };
 
 function loadSys(){
   xhr(PATHS.sys, d => {
@@ -11,4 +11,5 @@ function loadSys(){
     updateAll();
   });
 }
+const loadNp = () => xhr(PATHS.nowplaying, d => { np = d; });
 const loadUsage = () => xhr(PATHS.usage, d => { usage = d; });
