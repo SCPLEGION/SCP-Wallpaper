@@ -19,7 +19,7 @@ iNiR shell ──starts──▶ WebWallpaperHost.qml (one per monitor, QtWebEng
 ## Quick start
 
 ```bash
-./install.sh              # links commands, installs the two helper services, points iNiR at the page, patches iNiR
+./install.sh              # links commands, installs the three helper services, points iNiR at the page, patches iNiR
 scp-wallpaper reload      # restart the shell so it loads the page
 scp-wallpaper status      # what is running and what iNiR is showing
 ```
