@@ -1,16 +1,16 @@
-// Scene 15: Dashboard: Jarvis command centre. A shaded 3D globe (procedural continents, scanner, data arcs, orbiting satellites) under an SVG HUD frame; widgets sit on top
+// Scene 15: Dashboard: SCP Foundation containment console. A shaded 3D globe (procedural continents, scanner, data arcs, orbiting satellites) under an SVG HUD frame; widgets sit on top
 'use strict';
 
-// 15. Dashboard: Jarvis command centre
+// 15. Dashboard: SCP Foundation containment console
 SCENES.push({
-  name: 'Dashboard', accent: '#4fe3ff', hud: true, curved: true, swatch: 'radial-gradient(circle at 50% 50%,#2fb7d8 0 22%,#0b3a4a 23% 40%,#02090e 41%)',
+  name: 'Dashboard', accent: '#e8832a', hud: true, curved: true, swatch: 'radial-gradient(circle at 50% 50%,#e8832a 0 22%,#4a2a0e 23% 40%,#0b0805 41%)',
   preset: { on: ['clock', 'system', 'claude', 'calendar', 'progress'], layout: {
     clock: { x: .455, y: .925, s: .3 }, system: { x: .04, y: .30, s: .8 }, claude: { x: .04, y: .70, s: .8 }, calendar: { x: .78, y: .20, s: .8 }, progress: { x: .78, y: .60, s: .8 } } },
   mount(seed){
     this.seed = seed;
-    const C = '#4fe3ff';
-    const s = `<g font-family="monospace" fill="${C}"><text x="60" y="64" font-size="12" letter-spacing="7" fill-opacity=".6">SCP</text>
-      <text x="${W - 60}" y="64" font-size="11" letter-spacing="5" text-anchor="end" fill-opacity=".45">ONLINE</text><circle class="hb" cx="${W - 150}" cy="60" r="3" fill="${C}"/></g>
+    const C = '#e8832a';
+    const s = `<g font-family="monospace" fill="${C}"><text x="60" y="64" font-size="12" letter-spacing="7" fill-opacity=".7">SCP FOUNDATION · SITE-19</text>
+      <text x="${W - 60}" y="64" font-size="11" letter-spacing="5" text-anchor="end" fill-opacity=".55">SECURE · CLEARANCE 4</text><circle class="hb" cx="${W - 330}" cy="60" r="3" fill="${C}"/></g>
       <style>.hb{animation:hb 1.6s steps(2) infinite}@keyframes hb{50%{opacity:.15}}</style>`;
     return '<canvas id="cv"></canvas>' + svg(s);
   },
@@ -38,7 +38,7 @@ SCENES.push({
     for (let tries = 0; tries < 500 && this.cities.length < 15; tries++){
       const p = this.land[Math.floor(r() * this.land.length)];
       if (this.cities.every(c => c.x * p.x + c.y * p.y + c.z * p.z < .82)) this.cities.push({ x: p.x, y: p.y, z: p.z, ph: r() * 6.28,
-        code: 'N-' + String(this.cities.length + 1).padStart(2, '0') + ' ' + String.fromCharCode(65 + Math.floor(r() * 26)) + String.fromCharCode(65 + Math.floor(r() * 26)) });
+        code: 'SITE-' + (10 + Math.floor(r() * 80)) + ' ' + ['SAFE', 'EUCLID', 'KETER'][Math.floor(r() * 3)] });
     }
     const nc = this.cities.length, ARC = 26;
     this.arcs = [];
@@ -66,7 +66,7 @@ SCENES.push({
   unmount(){ this.run = false; clearTimeout(this.timer); },
   tick(t){
     const g = this.g, w = this.w, h = this.h, cx = w * .5, cy = h * .53, R = Math.min(h * .31, w * .19), ti = this.tilt, ct = Math.cos(ti), st = Math.sin(ti);
-    const rot = t * .12, cr = Math.cos(rot), sr = Math.sin(rot), A = '79,227,255';
+    const rot = t * .12, cr = Math.cos(rot), sr = Math.sin(rot), A = '232,131,42';
     this.lvl += ((this.tg || 0) - this.lvl) * .25;
     const pulse = this.lvl, Rg = R * (1 + pulse * .025);
     // globe-space -> screen; rotation about Y by the spin, then the tilt about X
@@ -74,7 +74,7 @@ SCENES.push({
     const F = (x, y, z) => { const X = x * cr + z * sr, Z = -x * sr + z * cr; return [X, y * ct - Z * st, y * st + Z * ct]; };   // same, unit vector
     const Tilt = (x, y, z, k) => [cx + Rg * k * x, cy + Rg * k * (y * ct - z * st), y * st + z * ct];                              // orbit plane: no spin
     g.setTransform(1, 0, 0, 1, 0, 0);
-    const bg = g.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * .75); bg.addColorStop(0, '#06303f'); bg.addColorStop(.45, '#021019'); bg.addColorStop(1, '#010508');
+    const bg = g.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * .75); bg.addColorStop(0, '#2a1a0c'); bg.addColorStop(.45, '#120c07'); bg.addColorStop(1, '#070504');
     g.fillStyle = bg; g.fillRect(0, 0, w, h);
     // orbit rings (back halves first: the globe disc then hides them)
     const orbitPt = (o, a) => { const x0 = Math.cos(a), z0 = Math.sin(a), y1 = -z0 * Math.sin(o.inc), z1 = z0 * Math.cos(o.inc), co = Math.cos(o.node), so = Math.sin(o.node); return Tilt(x0 * co + z1 * so, y1, -x0 * so + z1 * co, o.rr); };
@@ -86,8 +86,8 @@ SCENES.push({
           const a = o.ph + o.dir * t * 6.2832 / o.per + k * 3.1, p = orbitPt(o, a); if ((p[2] >= 0) !== front) continue;
           const tail = orbitPt(o, a - o.dir * .22); const gr = g.createLinearGradient(tail[0], tail[1], p[0], p[1]); gr.addColorStop(0, `rgba(${A},0)`); gr.addColorStop(1, `rgba(${A},.9)`);
           g.strokeStyle = gr; g.lineWidth = 2; g.beginPath(); g.moveTo(tail[0], tail[1]); g.lineTo(p[0], p[1]); g.stroke(); g.lineWidth = 1;
-          g.fillStyle = '#e8fdff'; g.fillRect(p[0] - 3, p[1] - 3, 6, 6); g.strokeStyle = `rgba(${A},.8)`; g.strokeRect(p[0] - 7, p[1] - 7, 14, 14);
-          g.font = '10px monospace'; g.fillStyle = `rgba(${A},.85)`; g.fillText('SAT-' + (this.orbits.indexOf(o) * 3 + k + 1).toString().padStart(2, '0'), p[0] + 12, p[1] + 3);
+          g.fillStyle = '#fff1d8'; g.fillRect(p[0] - 3, p[1] - 3, 6, 6); g.strokeStyle = `rgba(${A},.8)`; g.strokeRect(p[0] - 7, p[1] - 7, 14, 14);
+          g.font = '10px monospace'; g.fillStyle = `rgba(${A},.85)`; g.fillText('MTF-' + (this.orbits.indexOf(o) * 3 + k + 1).toString().padStart(2, '0'), p[0] + 12, p[1] + 3);
         }
       }
     };
@@ -95,7 +95,7 @@ SCENES.push({
     // atmosphere + ocean disc
     const atm = g.createRadialGradient(cx, cy, Rg * .92, cx, cy, Rg * 1.28); atm.addColorStop(0, `rgba(${A},${.30 + pulse * .25})`); atm.addColorStop(.35, `rgba(${A},.09)`); atm.addColorStop(1, `rgba(${A},0)`);
     g.fillStyle = atm; g.beginPath(); g.arc(cx, cy, Rg * 1.28, 0, 6.2832); g.fill();
-    const ocean = g.createRadialGradient(cx - Rg * .35, cy - Rg * .4, Rg * .1, cx, cy, Rg); ocean.addColorStop(0, '#0e6a85'); ocean.addColorStop(.6, '#07364a'); ocean.addColorStop(1, '#020c14');
+    const ocean = g.createRadialGradient(cx - Rg * .35, cy - Rg * .4, Rg * .1, cx, cy, Rg); ocean.addColorStop(0, '#5a3818'); ocean.addColorStop(.6, '#2b1a0b'); ocean.addColorStop(1, '#0a0604');
     g.fillStyle = ocean; g.beginPath(); g.arc(cx, cy, Rg, 0, 6.2832); g.fill();
     // graticule
     const line = (fn, n, a0, a1) => { let prev = fn(0); for (let i = 1; i <= n; i++){ const p = fn(i / n); if (p[2] > 0 && prev[2] > 0){ g.strokeStyle = `rgba(${A},${a1})`; g.beginPath(); g.moveTo(prev[0], prev[1]); g.lineTo(p[0], p[1]); g.stroke(); } prev = p; } };
@@ -106,7 +106,7 @@ SCENES.push({
     for (const p of this.land){
       const q = F(p.x, p.y, p.z); if (q[2] <= 0) continue;
       const lit = Math.max(0, q[0] * -.45 + q[1] * -.5 + q[2] * .75), d = Math.abs(p.y - ys), sc = d < .035 ? 1 - d / .035 : 0;
-      g.fillStyle = sc > 0 ? `rgba(220,252,255,${.55 + sc * .45})` : `rgba(${A},${.3 + lit * .6 + pulse * .12})`;
+      g.fillStyle = sc > 0 ? `rgba(255,236,205,${.55 + sc * .45})` : `rgba(${A},${.3 + lit * .6 + pulse * .12})`;
       const sz = 1.6 + q[2] * 1.5 + sc * 1.8; g.fillRect(cx + Rg * q[0] - sz / 2, cy + Rg * q[1] - sz / 2, sz, sz);
     }
     const sl = Math.asin(ys); line(u => { const o = u * 6.2832; return V(Math.cos(sl) * Math.sin(o), Math.sin(sl), Math.cos(sl) * Math.cos(o)); }, 90, 0, .6);
@@ -116,14 +116,14 @@ SCENES.push({
       g.strokeStyle = `rgba(${A},.4)`; let pen=false; g.beginPath(); pen = false;
       for (const p of P){ if (p[2] < -.05){ pen = false; continue; } pen ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); pen = true; } g.stroke();
       const u = (t * a.sp + a.ph) % 1, i = Math.floor(u * (P.length - 1)), p = P[i];
-      if (p[2] > 0){ const gl = g.createRadialGradient(p[0], p[1], 0, p[0], p[1], 9); gl.addColorStop(0, 'rgba(235,254,255,.95)'); gl.addColorStop(1, `rgba(${A},0)`); g.fillStyle = gl; g.beginPath(); g.arc(p[0], p[1], 9, 0, 6.2832); g.fill(); }
+      if (p[2] > 0){ const gl = g.createRadialGradient(p[0], p[1], 0, p[0], p[1], 9); gl.addColorStop(0, 'rgba(255,240,215,.95)'); gl.addColorStop(1, `rgba(${A},0)`); g.fillStyle = gl; g.beginPath(); g.arc(p[0], p[1], 9, 0, 6.2832); g.fill(); }
     }
     // city beacons; the one nearest the view centre gets a callout
     let best = null, bz = .35;
     for (const c of this.cities){
       const q = F(c.x, c.y, c.z); if (q[2] <= .02) continue;
       const x = cx + Rg * q[0], y = cy + Rg * q[1], k = (t * .6 + c.ph) % 1;
-      g.fillStyle = '#eafdff'; g.beginPath(); g.arc(x, y, 2.6, 0, 6.2832); g.fill();
+      g.fillStyle = '#fff1d8'; g.beginPath(); g.arc(x, y, 2.6, 0, 6.2832); g.fill();
       g.strokeStyle = `rgba(${A},${(1 - k) * .8})`; g.beginPath(); g.arc(x, y, 3 + k * 16, 0, 6.2832); g.stroke();
       if (q[2] > bz){ bz = q[2]; best = [x, y, c]; }
     }
@@ -133,7 +133,7 @@ SCENES.push({
       g.fillStyle = `rgba(${A},.9)`; g.font = '13px monospace'; g.fillText(c.code, ex + 8, ey - 7);
     }
     // limb highlight + terminator shade
-    const sh = g.createRadialGradient(cx - Rg * .45, cy - Rg * .5, Rg * .2, cx + Rg * .25, cy + Rg * .3, Rg * 1.15); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(1,6,10,.32)');
+    const sh = g.createRadialGradient(cx - Rg * .45, cy - Rg * .5, Rg * .2, cx + Rg * .25, cy + Rg * .3, Rg * 1.15); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(8,4,1,.38)');
     g.fillStyle = sh; g.beginPath(); g.arc(cx, cy, Rg, 0, 6.2832); g.fill();
     g.strokeStyle = `rgba(${A},.75)`; g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy, Rg, 0, 6.2832); g.stroke(); g.lineWidth = 1;
     drawOrbits(true);
