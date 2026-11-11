@@ -125,3 +125,18 @@
   body.curved .w .bar i, body.curved .w .sb { height: 1px; }
   body.curved .w .srow, body.curved .w .bar span, body.curved .w .cal-h { color: rgba(232,222,200,.6); }
   body.curved .w .spark { display: none; }
+
+  /* workspaces */
+  .wsw { min-width: 20em; }
+  .ws { display: flex; gap: .5em; }
+  .ws span { display: grid; place-items: center; min-width: 2.4em; height: 2.4em; border: 1px solid var(--line); border-radius: .5em; position: relative; }
+  .ws span b { font-weight: 500; font-size: .95em; font-variant-numeric: tabular-nums; }
+  .ws span i { position: absolute; right: .25em; bottom: .05em; font-size: .6em; font-style: normal; color: var(--fg-dim); }
+  .ws span.empty { opacity: .45; }
+  .ws span.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .ws-t { margin-top: .8em; display: flex; gap: .7em; align-items: baseline; max-width: 26em; font-size: .9em; }
+  .ws-t em { flex: none; font-size: .78em; letter-spacing: .14em; text-transform: uppercase; color: var(--fg-dim); }
+  .ws-t span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.theme-dossier .ws span { border-radius: 0; border-color: var(--fg); }
+  body.theme-dossier .ws span.on { background: var(--fg); color: var(--paper); box-shadow: none; }
+  body.hud .ws span { border-radius: 0; }

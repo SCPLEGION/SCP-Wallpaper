@@ -2,7 +2,7 @@
 
 An animated, interactive wallpaper for the [iNiR](https://github.com/snowarch/iNiR) niri shell: 15 procedural scenes
 (minimal SVG art, HUD/"Jarvis" scenes, a WebGL nebula, a live audio equalizer) plus a dashboard of widgets (clock,
-system stats, Claude usage, calendar, pomodoro, todo, countdown, a live reactor gauge) that you can drag, resize and save
+system stats, Claude usage, calendar, pomodoro, todo, countdown, now playing, niri workspaces, a live reactor gauge) that you can drag, resize and save
 as layouts. It is one web page (TypeScript, bundled to a single script) shown by iNiR's web-wallpaper backend on every
 monitor, plus one small background service.
 

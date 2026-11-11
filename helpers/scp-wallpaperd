@@ -29,6 +29,7 @@ sys.dont_write_bytecode = True   # producers are loaded from extension-less file
 HERE = os.path.dirname(os.path.realpath(__file__))
 CACHE = os.path.expanduser("~/.cache/scp-center")
 CONTROL = os.path.join(CACHE, "control.json")
+NIRI = os.path.join(CACHE, "niri.json")
 SOCK = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "scp-wallpaperd.sock")
 PRODUCERS = ["scp-sysstats", "scp-audioviz", "scp-nowplaying"]
 COMMANDS = {"scene", "next", "prev", "reseed", "dash", "layout", "widget", "auto", "edit", "menu", "theme", "reload"}
@@ -115,12 +116,34 @@ def covered(outputs, workspaces, windows, overview):
     return res
 
 
+def summary(outputs, workspaces, windows):
+    """Per output: its workspaces (index, active, window count) and the title of the window in focus there."""
+    res = {}
+    for name in outputs:
+        wss = sorted((w for w in workspaces.values() if w.get("output") == name), key=lambda w: w.get("idx", 0))
+        act = next((w for w in wss if w.get("is_active")), None)
+        win = windows.get(act.get("active_window_id")) if act else None
+        res[name] = {
+            "workspaces": [{"idx": w.get("idx"), "name": w.get("name"), "active": bool(w.get("is_active")),
+                            "windows": sum(1 for x in windows.values() if x.get("workspace_id") == w["id"])} for w in wss],
+            "title": (win or {}).get("title") or "", "app": (win or {}).get("app_id") or "",
+        }
+    return res
+
+
+def write_json(path, data):
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f)
+    os.replace(tmp, path)
+
+
 def watch_niri(ctl):
     """Follow niri's event stream; keep a model of workspaces/windows and publish which outputs are covered."""
     while True:
         try:
             outputs = niri("outputs")
-            workspaces, windows, overview = {}, {}, False
+            workspaces, windows, overview, last = {}, {}, False, None
             proc = subprocess.Popen(["niri", "msg", "--json", "event-stream"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
             for line in proc.stdout:
                 try:
@@ -154,6 +177,10 @@ def watch_niri(ctl):
                 else:
                     continue
                 ctl.set_pause(covered(outputs, workspaces, windows, overview))
+                s = summary(outputs, workspaces, windows)
+                if s != last:                             # focus/title changes only; layout ticks do not rewrite it
+                    write_json(NIRI, {"t": int(time.time() * 1000), "outputs": s})
+                    last = s
             proc.wait()
         except Exception as e:  # noqa: BLE001 - niri restarting, not running yet, ...
             log(f"niri watch: {type(e).__name__}: {e}")
@@ -199,6 +226,9 @@ def selftest():
     assert covered(outs, ws, win, True) == {"A": False, "B": False}, "overview shows the wallpaper"
     win[10]["is_floating"] = True
     assert covered(outs, ws, win, False)["A"] is False, "floating windows never pause"
+    win[10].update(workspace_id=1, title="kitty")
+    s = summary(outs, ws, win)
+    assert s["A"]["title"] == "kitty" and s["A"]["workspaces"][0]["windows"] == 1 and s["B"]["title"] == ""
     print("selftest ok")
     return 0
 

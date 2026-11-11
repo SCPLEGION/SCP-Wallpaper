@@ -12,5 +12,6 @@ export const PATHS = {
   sys: CACHE_URL + 'sysstats.json',          // scp-wallpaperd (sysstats)
   audio: CACHE_URL + 'audio.json',           // scp-wallpaperd (audio)
   nowplaying: CACHE_URL + 'nowplaying.json', // scp-wallpaperd (nowplaying)
+  niri: CACHE_URL + 'niri.json',             // scp-wallpaperd: workspaces + focused title per output
   control: CACHE_URL + 'control.json',       // scp-wallpaperd: pause per screen + commands from the CLI
 };

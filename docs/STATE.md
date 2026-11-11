@@ -44,6 +44,8 @@ The query string carries `?screen=<output>` (added by patch 0002).
 
 `nowplaying.json`: `{"t", "status": "playing"|"paused"|"none", "player", "title", "artist", "album", "art", "length", "position"}` (seconds).
 
+`niri.json` (scp-wallpaperd, rewritten only when it changes): `{"t", "outputs": {"DP-3": {"workspaces": [{"idx", "name", "active", "windows"}], "title", "app"}}}`.
+
 `control.json` (scp-wallpaperd): `{"t": <ms>, "pause": {"DP-3": true, ...}, "cmds": [{"seq", "screen": null|"DP-3", "cmd", "arg"}]}`.
 The last 32 commands are kept; a page runs only those with a `seq` above the highest it saw on its first read.
 

@@ -60,7 +60,7 @@ One Python process (`helpers/scp-wallpaperd`, unit `scp-wallpaperd.service`):
 | `scp-sysstats` | `sysstats.json` every 2 s | CPU/temps, RAM, GPU/VRAM, default-route NIC rates, mounts, load, uptime |
 | `scp-audioviz` | `audio.json` ~30/s, 1/s in silence | `parec` on the default sink's *monitor* (never the mic), FFT, 72 log bands; nothing stored |
 | `scp-nowplaying` | `nowplaying.json` every 1 s | best MPRIS player via `playerctl` |
-| `niri` | `control.json` `pause` | event stream → covered outputs |
+| `niri` | `control.json` `pause`, `niri.json` | event stream → covered outputs; workspaces + focused window per output (Obszary robocze widget) |
 | socket | `control.json` `cmds` | `$XDG_RUNTIME_DIR/scp-wallpaperd.sock`, line-JSON requests from `scp-wallpaperd send …` |
 
 The producers are the same files that run standalone (`helpers/scp-*`), loaded as modules; a crash restarts that
