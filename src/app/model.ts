@@ -3,6 +3,9 @@ export interface Pos { x: number; y: number; s: number }
 export type Layout = Record<string, Pos>;
 export interface Cfg { layout: Layout; widgets: Record<string, boolean> }
 export type Wbg = 'none' | 'scrim' | 'glass';
+/** Widget/menu look. 'scene' = whatever the scene asks for (HUD on the Dashboard scene, minimal elsewhere). */
+export type Theme = 'scene' | 'minimal' | 'console' | 'dossier';
+export const THEMES: Theme[] = ['scene', 'minimal', 'console', 'dossier'];
 export interface Slot extends Cfg { dscale: number; wbg: Wbg; h24: boolean; secs: boolean }
 export interface Pomo { mode: 'focus' | 'break'; run: boolean; endAt: number; left: number }
 
@@ -17,7 +20,7 @@ export interface State extends Cfg {
   slots: Record<number, Slot>;
   slot: number;
   h24: boolean; secs: boolean;
-  dscale: number; wbg: Wbg;
+  dscale: number; wbg: Wbg; theme: Theme;
   tab: 'p1' | 'p2';
   todo: { t: string; done: boolean }[];
   pomo: Pomo | null;

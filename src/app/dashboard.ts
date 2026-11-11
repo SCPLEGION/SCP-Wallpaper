@@ -2,7 +2,7 @@
 import { $, clamp, clone } from '../core/util.ts';
 import { WIDGETS } from '../widgets/index.ts';
 import type { Widget } from '../widgets/types.ts';
-import type { Cfg, Slot } from './model.ts';
+import { THEMES, type Cfg, type Slot, type Theme } from './model.ts';
 import { state, save, params } from './state.ts';
 import { app, onSceneChange, onFrame } from './stage.ts';
 import { curve, uncurve } from './curve.ts';
@@ -43,13 +43,23 @@ export function setOwn(on: boolean){
 }
 function sceneChanged(){
   const sc = app.scene;
-  document.body.classList.toggle('hud', !!sc?.hud);
-  document.body.classList.toggle('curved', !!sc?.curved);
-  if (!sc?.curved) uncurve([...box.values()].map(b => b.box));
+  applyTheme();
   if (sc?.preset && !state.scSeen[sc.id]){ state.sc[sc.id] = makeCfg(true); state.scSeen[sc.id] = true; save(); }
   $('tOwn').classList.toggle('on', hasOwn());
   if (box.size){ refreshWidgetToggles(); applyLook(); updateAll(); }
 }
+
+/* Theme: body.hud (console skin), body.theme-<name>; the curved layout only fits the skins without cards. */
+const curvedNow = () => !!app.scene?.curved && state.theme !== 'dossier';
+export function applyTheme(){
+  const t = state.theme, sc = app.scene, b = document.body.classList;
+  b.toggle('hud', t === 'console' || (t === 'scene' && !!sc?.hud));
+  for (const x of ['minimal', 'console', 'dossier']) b.toggle('theme-' + x, t === x);
+  b.toggle('curved', curvedNow());
+  if (!curvedNow()) uncurve([...box.values()].map(b => b.box));
+  const sel = document.getElementById('theme') as HTMLSelectElement | null; if (sel) sel.value = t;
+}
+export function setTheme(t: Theme){ state.theme = t; save(); applyTheme(); }
 
 const updateOne = (w: Widget, n = new Date()) => { const b = box.get(w.id); if (b && w.update && isOn(w.id)) w.update(b.el, n); };
 export function updateAll(){ const n = new Date(); WIDGETS.forEach(w => updateOne(w, n)); }
@@ -154,6 +164,9 @@ export function initDash(){
   ds.addEventListener('click', e => e.stopPropagation());
   wb.value = state.wbg; wb.addEventListener('change', () => { state.wbg = wb.value as Slot['wbg']; save(); applyLook(); });
   wb.addEventListener('click', e => e.stopPropagation());
+  const th = $<HTMLSelectElement>('theme');
+  th.value = state.theme; th.addEventListener('change', () => { if ((THEMES as string[]).includes(th.value)) setTheme(th.value as Theme); });
+  th.addEventListener('click', e => e.stopPropagation());
   $('resetLayout').addEventListener('click', e => { e.stopPropagation(); resetCfg(); state.dscale = 100; ds.value = '100'; state.slot = -1; save(); refreshWidgetToggles(); applyLook(); drawSlots(); });
   $('editdone').addEventListener('click', () => setEdit(false));
 
@@ -165,5 +178,5 @@ export function initDash(){
 onSceneChange(sceneChanged);
 onFrame(n => {
   const geo = app.run?.geo;
-  if (app.scene?.curved && geo && n % 2 === 0) curve(geo, WIDGETS.filter(w => isOn(w.id)).map(w => box.get(w.id)!.box));
+  if (curvedNow() && geo && n % 2 === 0) curve(geo, WIDGETS.filter(w => isOn(w.id)).map(w => box.get(w.id)!.box));
 });

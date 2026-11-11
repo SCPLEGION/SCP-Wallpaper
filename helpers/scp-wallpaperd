@@ -31,7 +31,7 @@ CACHE = os.path.expanduser("~/.cache/scp-center")
 CONTROL = os.path.join(CACHE, "control.json")
 SOCK = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "scp-wallpaperd.sock")
 PRODUCERS = ["scp-sysstats", "scp-audioviz", "scp-nowplaying"]
-COMMANDS = {"scene", "next", "prev", "reseed", "dash", "layout", "widget", "auto", "edit", "menu", "reload"}
+COMMANDS = {"scene", "next", "prev", "reseed", "dash", "layout", "widget", "auto", "edit", "menu", "theme", "reload"}
 KEEP = 32               # commands kept in control.json; a page only runs those newer than what it saw at load
 COVER = 0.92            # a window covering this fraction of the output's width and height hides the wallpaper
 

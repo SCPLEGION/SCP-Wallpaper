@@ -1,11 +1,11 @@
 // Turns whatever is in storage into a valid State. Pure (no DOM) so test/ can run it under node.
-import type { State } from './model.ts';
+import { THEMES, type State } from './model.ts';
 
 export interface SceneRef { id: string; name: string }
 
 export function defaults(scenes: SceneRef[], now = new Date()): State {
   return { v: 2, scene: scenes[0].id, seed: (Math.random() * 1e9) | 0, dash: true, auto: 0, layout: {}, widgets: {}, sc: {}, scSeen: {}, slots: {}, slot: -1,
-    h24: true, secs: true, dscale: 100, wbg: 'scrim', tab: 'p1', todo: [], pomo: null, cd: { label: 'Nowy Rok', date: (now.getFullYear() + 1) + '-01-01' } };
+    h24: true, secs: true, dscale: 100, wbg: 'scrim', theme: 'scene', tab: 'p1', todo: [], pomo: null, cd: { label: 'Nowy Rok', date: (now.getFullYear() + 1) + '-01-01' } };
 }
 
 /**
@@ -30,6 +30,7 @@ export function migrate(raw: unknown, scenes: SceneRef[]): State {
   for (const k of Object.keys(d)) if (o[k] !== undefined && typeof o[k] === typeof (d as any)[k] || (k === 'pomo' && o[k])) s[k] = o[k];
   if (!scenes.some(x => x.id === s.scene)) s.scene = d.scene;
   if (!['none', 'scrim', 'glass'].includes(s.wbg)) s.wbg = d.wbg;
+  if (!THEMES.includes(s.theme)) s.theme = d.theme;
   if (s.tab !== 'p2') s.tab = 'p1';
   if (!Array.isArray(s.todo)) s.todo = [];
   s.v = 2;

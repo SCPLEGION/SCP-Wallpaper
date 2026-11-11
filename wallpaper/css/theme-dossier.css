@@ -1,0 +1,60 @@
+/* Theme "dossier": every widget is a Foundation file card. Paper, typewriter mono, black redaction bars for data,
+   containment red for what needs attention. Tokens are redefined on the card so widget CSS keeps working unchanged. */
+  body.theme-dossier .w {
+    --fg: #17140f; --fg-dim: rgba(23, 20, 15, .58); --line: rgba(23, 20, 15, .16); --accent: #b3261e; --paper: #e9e3d5;
+    background: var(--paper); color: var(--fg); border: 1px solid var(--fg); border-radius: 0; text-shadow: none;
+    box-shadow: .45em .45em 0 rgba(0, 0, 0, .5); padding: 2.9em 1.5em 1.3em;
+    font-family: "JetBrainsMono NFM", "JetBrains Mono", ui-monospace, monospace; font-size: 1.45vh;
+  }
+  /* file header: replaces the scrim halo */
+  body.theme-dossier .w::before {
+    content: "SCP // " attr(data-name); position: absolute; inset: 0 0 auto 0; z-index: auto; pointer-events: none;
+    background: var(--fg); color: var(--paper); padding: .55em 1.5em; font-size: .7em; letter-spacing: .32em; text-transform: uppercase;
+  }
+  body.theme-dossier .w.reactorw { background: none; border: 0; box-shadow: none; padding: 0; }
+  body.theme-dossier .w.reactorw::before { display: none; }
+
+  body.theme-dossier .clk { font-weight: 300; font-size: 7em; letter-spacing: -.04em; }
+  body.theme-dossier .dt { font-weight: 400; color: var(--fg-dim); }
+  body.theme-dossier .dt b { color: var(--paper); background: var(--fg); padding: .1em .5em; opacity: 1; }
+  /* stamp on the clock card */
+  body.theme-dossier #clock-w .wc::after {
+    content: "SECURE · CONTAIN · PROTECT"; display: inline-block; margin-top: 1.2em; padding: .35em .7em;
+    border: 2px solid var(--accent); color: var(--accent); font-size: .72em; font-weight: 700; letter-spacing: .25em;
+    transform: rotate(-3deg); opacity: .85;
+  }
+
+  /* data bars read like redactions: a black block on a hatched track */
+  body.theme-dossier .bar i, body.theme-dossier .sb {
+    height: .55em; background: repeating-linear-gradient(90deg, var(--line) 0 2px, transparent 2px 6px);
+  }
+  body.theme-dossier .bar i b, body.theme-dossier .sb i { background: var(--fg); }
+  body.theme-dossier .bar i b.hot, body.theme-dossier .sb i.hot { background: var(--accent); }
+  body.theme-dossier .bar span, body.theme-dossier .srow { color: var(--fg-dim); }
+  body.theme-dossier .srow em { font-weight: 600; }
+  body.theme-dossier .spark { color: var(--fg); opacity: .7; }
+
+  body.theme-dossier .wk div::after { border-radius: 0; border-color: var(--fg); }
+  body.theme-dossier .wk div.today { color: var(--accent); font-weight: 700; }
+  body.theme-dossier .wk div.today::after { background: var(--accent); border-color: var(--accent); }
+
+  body.theme-dossier .cal-h { color: var(--fg); font-weight: 700; }
+  body.theme-dossier .cal-g span { border-radius: 0; }
+  body.theme-dossier .cal-g span.today { background: var(--fg); color: var(--paper); }
+
+  body.theme-dossier .td li::before { border-radius: 0; border-color: var(--fg); }
+  body.theme-dossier .td li.done span { color: var(--fg-dim); text-decoration: line-through 2px var(--fg); }
+  body.theme-dossier .tin, body.theme-dossier .cd-e input, body.theme-dossier .btn {
+    background: transparent; color: var(--fg); border: 1px solid var(--fg); border-radius: 0; }
+  body.theme-dossier .cd-n { font-weight: 700; }
+  body.theme-dossier .np-art { border-radius: 0; filter: grayscale(1) contrast(1.15); }
+  body.theme-dossier .wc.stale { opacity: .45; }
+
+  /* menu: the same file-card language */
+  body.theme-dossier #menu { --fg: #17140f; --fg-dim: rgba(23,20,15,.58); --line: rgba(23,20,15,.18); --accent: #b3261e;
+    background: #e9e3d5; color: var(--fg); border: 1px solid var(--fg); border-radius: 0; backdrop-filter: none; box-shadow: .6em .6em 0 rgba(0,0,0,.5);
+    font-family: "JetBrainsMono NFM", ui-monospace, monospace; }
+  body.theme-dossier #menu .scene, body.theme-dossier #menu .tab, body.theme-dossier #menu select, body.theme-dossier #menu .btn { border-radius: 0; color: var(--fg); }
+  body.theme-dossier #menu select option { background: #e9e3d5; color: #17140f; }
+  body.theme-dossier .sw-toggle { border-radius: 0; }
+  body.theme-dossier .sw-toggle::after { border-radius: 0; background: #e9e3d5; }

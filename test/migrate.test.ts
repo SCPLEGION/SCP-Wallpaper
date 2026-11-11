@@ -33,3 +33,9 @@ test('wrong types are ignored, pomo survives', () => {
   const s = migrate({ v: 2, dash: 'yes', todo: 'nope', pomo }, SC);
   assert.equal(s.dash, defaults(SC).dash); assert.deepEqual(s.todo, []); assert.deepEqual(s.pomo, pomo);
 });
+
+test('theme: v1 gets the scene-driven default, unknown values fall back', () => {
+  assert.equal(migrate({ scene: 0 }, SC).theme, 'scene');
+  assert.equal(migrate({ v: 2, theme: 'dossier' }, SC).theme, 'dossier');
+  assert.equal(migrate({ v: 2, theme: 'neon' }, SC).theme, 'scene');
+});
