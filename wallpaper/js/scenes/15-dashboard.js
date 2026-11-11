@@ -16,6 +16,8 @@ SCENES.push({
   },
   after(){
     cvInit(this, 1);
+    // The static backdrop is a CSS gradient on the canvas element: one less full-screen fill per frame (matters on a CPU canvas).
+    this.c.style.background = `radial-gradient(circle ${Math.max(this.w, this.h) * .75}px at 50% 53%, #2a1a0c 0, #120c07 45%, #070504 100%)`;
     const r = rng(this.seed);
     // Real geography: land dots come from Natural Earth (data/world.js), beacons from data/sites.js.
     // y points down on screen, so north is -sin(lat); lon 0 faces the viewer before the spin is applied.
@@ -58,8 +60,7 @@ SCENES.push({
     const F = (x, y, z) => { const X = x * cr + z * sr, Z = -x * sr + z * cr; return [X, y * ct - Z * st, y * st + Z * ct]; };   // same, unit vector
     const Tilt = (x, y, z, k) => [cx + Rg * k * x, cy + Rg * k * (y * ct - z * st), y * st + z * ct];                              // orbit plane: no spin
     g.setTransform(1, 0, 0, 1, 0, 0);
-    const bg = g.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * .75); bg.addColorStop(0, '#2a1a0c'); bg.addColorStop(.45, '#120c07'); bg.addColorStop(1, '#070504');
-    g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    g.clearRect(0, 0, w, h);
     // orbit rings (back halves first: the globe disc then hides them)
     const orbitPt = (o, a) => { const x0 = Math.cos(a), z0 = Math.sin(a), y1 = -z0 * Math.sin(o.inc), z1 = z0 * Math.cos(o.inc), co = Math.cos(o.node), so = Math.sin(o.node); return Tilt(x0 * co + z1 * so, y1, -x0 * so + z1 * co, o.rr); };
     const drawOrbits = front => {

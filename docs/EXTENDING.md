@@ -29,7 +29,7 @@ SCENES.push({
 ```
 
 A canvas scene returns `'<canvas id="cv"></canvas>'` from `mount`, calls `cvInit(this, scale)` in `after()` (sets `this.g`,
-`this.w`, `this.h`) and draws in `tick`. Use `scale < 1` to render below native resolution; the page runs once per monitor.
+`this.w`, `this.h`) and draws in `tick`. Use `scale < 1` to render below native resolution; the page runs once per monitor. The 2D context is GPU-backed by default; when VRAM passes 75% `vramGuard()` (app/state.js) remounts the scene on a CPU canvas (`this.soft` is true), so do not keep the context or canvas across mounts. `#cv=cpu` / `#cv=gpu` in the URL forces a mode.
 
 Optional scene fields:
 

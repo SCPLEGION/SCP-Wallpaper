@@ -11,6 +11,7 @@ if (params.has('seed')) state.seed = +params.get('seed');   // deterministic pre
 if (params.has('dash')) state.dash = params.get('dash') === '1';
 if (params.has('menu')) document.body.classList.add('menu-open');
 if (params.has('tab')) state.tab = params.get('tab');
+if (params.has('cv')) cvSoft = params.get('cv') === 'cpu';   // force the canvas mode (tests); disables vramGuard
 state.scene = ((state.scene % SCENES.length) + SCENES.length) % SCENES.length;
 const save = () => { try { localStorage.setItem('minwall', JSON.stringify(state)); } catch (e) {} };
 
@@ -30,4 +31,10 @@ function show(i, seed){
 function go(i, seed){
   if (busy) return; busy = true; stage.classList.add('out');
   setTimeout(() => { show(i, seed); requestAnimationFrame(() => stage.classList.remove('out')); setTimeout(() => busy = false, 120); }, 350);
+}
+// VRAM guard, fed by loadSys(): above 75% VRAM the canvas scenes switch to a CPU canvas, below 60% back to GPU.
+function vramGuard(d){
+  if (params.has('cv')) return;
+  if (d && d.vram_total){ const f = d.vram_used / d.vram_total; cvSoft = cvSoft ? f > .60 : f > .75; }
+  if (cur && cur.soft !== undefined && cur.soft !== cvSoft && !busy) go(state.scene);
 }
