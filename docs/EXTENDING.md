@@ -41,6 +41,8 @@ cvSlice(cv);                        // optional: draw in the 1600×900 SVG space
 return { soft: cv.soft, tick(t){ cv.g.fillRect(...) } };
 ```
 
+SCP scenes share `src/scenes/scp.ts` (pre-rendered `layer()`, the `emblem()`, in-world text). Draw static parts once into a layer and blit it each frame; never animate box-shadow/filter in CSS (a repaint every frame).
+
 Return `soft: cv.soft` from canvas scenes: the VRAM guard remounts a scene whose canvas mode no longer matches.
 For audio, `audio.on(cb, periodMs)` from `data/sources.ts` (and return its unsubscribe as `destroy`).
 

@@ -51,4 +51,6 @@ The last 32 commands are kept; a page runs only those with a `seq` above the hig
 
 `claude-usage.json` (usage-saver plugin): `{"updated_at": ISO, "five_hour": {"used_percentage", "resets_at"}, "seven_day": {…}, "tier": "eco"|"save"|"max"|null}`.
 `desk.json` (scp-wallpaperd desk): `{"t", "claude": {"usage": <claude-usage.json>, "sessions": [{"state", "since"}]}, "center": {"profile", "effect", "brightness", "dial", "shift"}}`.
-`control.json` also carries `known`: per screen (`"*"` = all) the last scene/dash/theme/auto/layout/widgets set through the daemon.
+`control.json` also carries `known`: per screen (`"*"` = all) the last scene/dash/theme/auto/layout/widgets/rates set through the daemon.
+
+`rates` (in the page state): widget id → refresh period in ms; missing = the widget's default. It sets the widget's timer, how often its data files are polled for it, and throttles data-driven redraws.

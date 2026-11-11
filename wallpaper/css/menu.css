@@ -26,6 +26,8 @@
   select, .btn { background: rgba(255,255,255,.06); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 12px; padding: 6px 10px; cursor: pointer; }
   select option { background: #14151b; color: var(--fg); }
   .btn:hover, select:hover { border-color: rgba(255,255,255,.35); }
+  #wlist .row span { flex: 1; }
+  #wlist select.rate { padding: 3px 6px; font-size: 11px; margin-right: 10px; max-width: 9.5em; }
   .hint { margin-top: 18px; font-size: 11px; line-height: 1.7; color: var(--fg-dim); }
   .hint kbd { font: inherit; padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; margin-right: 2px; }
   .tabs { display: flex; gap: 6px; margin-bottom: 16px; }

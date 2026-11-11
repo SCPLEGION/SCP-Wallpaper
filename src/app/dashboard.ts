@@ -2,7 +2,7 @@
 import { $, clamp, clone } from '../core/util.ts';
 import { WIDGETS } from '../widgets/index.ts';
 import type { Widget } from '../widgets/types.ts';
-import { THEMES, type Cfg, type Slot, type Theme } from './model.ts';
+import { CARD_THEMES, RATES, THEMES, type Cfg, type Slot, type Theme } from './model.ts';
 import { state, save, params } from './state.ts';
 import { app, onSceneChange, onFrame } from './stage.ts';
 import { curve, uncurve } from './curve.ts';
@@ -50,18 +50,45 @@ function sceneChanged(){
 }
 
 /* Theme: body.hud (console skin), body.theme-<name>; the curved layout only fits the skins without cards. */
-const curvedNow = () => !!app.scene?.curved && state.theme !== 'dossier';
+const curvedNow = () => !!app.scene?.curved && !CARD_THEMES.includes(state.theme);
 export function applyTheme(){
   const t = state.theme, sc = app.scene, b = document.body.classList;
   b.toggle('hud', t === 'console' || (t === 'scene' && !!sc?.hud));
-  for (const x of ['minimal', 'console', 'dossier']) b.toggle('theme-' + x, t === x);
+  for (const x of THEMES.slice(1)) b.toggle('theme-' + x, t === x);
   b.toggle('curved', curvedNow());
   if (!curvedNow()) uncurve([...box.values()].map(b => b.box));
   const sel = document.getElementById('theme') as HTMLSelectElement | null; if (sel) sel.value = t;
 }
 export function setTheme(t: Theme){ state.theme = t; save(); applyTheme(); }
 
-const updateOne = (w: Widget, n = new Date()) => { const b = box.get(w.id); if (b && w.update && isOn(w.id)) w.update(b.el, n); };
+const lastRun = new Map<string, number>();
+const updateOne = (w: Widget, n = new Date()) => { const b = box.get(w.id); if (b && w.update && isOn(w.id)){ lastRun.set(w.id, Date.now()); w.update(b.el, n); } };
+
+/* Refresh rate: each widget's default (`every`, or "when its data changes") can be overridden in state.rates.
+   The override sets the timer period and how often the data sources are polled for it, and throttles
+   source-driven redraws to that period. */
+export const rateOf = (w: Widget) => state.rates[w.id] || w.every || 0;
+export const hasRate = (w: Widget) => !!(w.every || w.sources?.length);
+const timers = new Map<string, number>(), trailing = new Map<string, number>(), unsubs = new Map<string, (() => void)[]>();
+function onData(w: Widget){
+  const r = state.rates[w.id], dt = Date.now() - (lastRun.get(w.id) || 0);
+  if (!r || dt >= r){ updateOne(w); return; }
+  if (!trailing.has(w.id)) trailing.set(w.id, window.setTimeout(() => { trailing.delete(w.id); updateOne(w); }, r - dt));
+}
+function schedule(w: Widget){
+  clearInterval(timers.get(w.id)); unsubs.get(w.id)?.forEach(f => f());
+  if (w.every) timers.set(w.id, window.setInterval(() => updateOne(w), rateOf(w)));
+  unsubs.set(w.id, (w.sources || []).map(s => s.on(() => onData(w), state.rates[w.id] || Infinity)));
+}
+export function setRate(id: string, ms: number){
+  const w = W_BY_ID.get(id); if (!w || !hasRate(w)) return false;
+  if (ms > 0) state.rates[id] = Math.max(100, ms); else delete state.rates[id];
+  save(); schedule(w); syncRates(); return true;
+}
+const fmtRate = (ms: number) => ms < 1000 ? ms + ' ms' : ms < 60000 ? ms / 1000 + ' s' : ms / 60000 + ' min';
+function syncRates(){
+  document.querySelectorAll<HTMLSelectElement>('#wlist select[data-r]').forEach(s => { s.value = String(state.rates[s.dataset.r!] || 0); });
+}
 export function updateAll(){ const n = new Date(); WIDGETS.forEach(w => updateOne(w, n)); }
 
 function refreshWidgetToggles(){
@@ -146,12 +173,18 @@ export function initDash(){
     const rz = document.createElement('i'); rz.className = 'rz'; rz.title = 'Rozmiar';
     b.append(el, rz); dash.appendChild(b); box.set(w.id, { box: b, el }); w.init?.(el);
     // Widgets refresh on their own period and when a source they read changes, only while visible.
-    if (w.every) setInterval(() => updateOne(w), w.every);
-    w.sources?.forEach(s => s.on(() => updateOne(w)));
+    schedule(w);
   });
   const wl = $('wlist');
-  WIDGETS.forEach(w => { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = `<span>${w.name}</span><button class="sw-toggle" data-w="${w.id}" aria-label="${w.name}"></button>`; wl.appendChild(r); });
-  wl.addEventListener('click', e => { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-w]'); if (b) setWidget(b.dataset.w!, !isOn(b.dataset.w!)); });
+  WIDGETS.forEach(w => {
+    const r = document.createElement('div'); r.className = 'row';
+    const def = w.every ? 'domyślnie ' + fmtRate(w.every) : 'przy zmianie danych';
+    const sel = hasRate(w) ? `<select class="rate" data-r="${w.id}" title="Odświeżanie">${[`<option value="0">${def}</option>`, ...RATES.map(ms => `<option value="${ms}">co ${fmtRate(ms)}</option>`)].join('')}</select>` : '';
+    r.innerHTML = `<span>${w.name}</span>${sel}<button class="sw-toggle" data-w="${w.id}" aria-label="${w.name}"></button>`; wl.appendChild(r);
+  });
+  wl.addEventListener('click', e => { e.stopPropagation(); const b = (e.target as HTMLElement).closest<HTMLElement>('[data-w]'); if (b) setWidget(b.dataset.w!, !isOn(b.dataset.w!)); });
+  wl.addEventListener('change', e => { const s = e.target as HTMLSelectElement; if (s.dataset.r) setRate(s.dataset.r, +s.value); });
+  syncRates();
 
   const bind = (id: string, get: () => boolean, set: (v: boolean) => void) => { const b = $(id); b.classList.toggle('on', get()); b.addEventListener('click', e => { e.stopPropagation(); set(!get()); b.classList.toggle('on', get()); }); };
   bind('tDash', () => state.dash, setDash);

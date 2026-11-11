@@ -1,9 +1,11 @@
 # SCP Wallpaper
 
-An animated, interactive wallpaper for the [iNiR](https://github.com/snowarch/iNiR) niri shell: 15 procedural scenes
-(minimal SVG art, HUD/"Jarvis" scenes, a WebGL nebula, a live audio equalizer) plus a dashboard of widgets (clock,
-system stats, Claude usage, calendar, pomodoro, todo, countdown, now playing, niri workspaces, a live reactor gauge) that you can drag, resize and save
-as layouts. It is one web page (TypeScript, bundled to a single script) shown by iNiR's web-wallpaper backend on every
+An animated, interactive wallpaper for the [iNiR](https://github.com/snowarch/iNiR) niri shell: 25 procedural scenes
+(minimal art, HUD/"Jarvis" scenes, a WebGL nebula, a live audio equalizer, and ten SCP Foundation scenes: emblem,
+containment breach, CCTV, containment cell, redacted file, biomonitor, reality anchor, site map, SCiPNET terminal, rift) plus a dashboard of widgets (clock,
+system stats, Claude usage, calendar, pomodoro, todo, countdown, now playing, niri workspaces, SCP Center state, a live reactor gauge) that you can drag, resize and save
+as layouts, each with its own refresh rate (menu › Widżety, or `scp-wallpaper rate ID MS`). Seven widget skins,
+four of them Foundation-themed (dossier, SCiPNET, breach, O5 Council). It is one web page (TypeScript, bundled to a single script) shown by iNiR's web-wallpaper backend on every
 monitor, plus one small background service.
 
 ```

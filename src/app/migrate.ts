@@ -5,7 +5,7 @@ export interface SceneRef { id: string; name: string }
 
 export function defaults(scenes: SceneRef[], now = new Date()): State {
   return { v: 2, scene: scenes[0].id, seed: (Math.random() * 1e9) | 0, dash: true, auto: 0, layout: {}, widgets: {}, sc: {}, scSeen: {}, slots: {}, slot: -1,
-    h24: true, secs: true, dscale: 100, wbg: 'scrim', theme: 'scene', tab: 'p1', todo: [], pomo: null, cd: { label: 'Nowy Rok', date: (now.getFullYear() + 1) + '-01-01' } };
+    h24: true, secs: true, dscale: 100, wbg: 'scrim', theme: 'scene', tab: 'p1', todo: [], pomo: null, cd: { label: 'Nowy Rok', date: (now.getFullYear() + 1) + '-01-01' }, rates: {} };
 }
 
 /**

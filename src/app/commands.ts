@@ -2,7 +2,7 @@
 import type { Cmd } from '../data/control.ts';
 import { state } from './state.ts';
 import { goId, go, step, reseed } from './stage.ts';
-import { setDash, setEdit, editing, loadSlot, setWidget, isOn, setTheme } from './dashboard.ts';
+import { setDash, setEdit, editing, loadSlot, setWidget, isOn, setTheme, setRate } from './dashboard.ts';
 import { THEMES, type Theme } from './model.ts';
 import { setAuto, toggleMenu } from './menu.ts';
 
@@ -20,6 +20,7 @@ export function runCommand({ cmd, arg }: Cmd){
     case 'layout': if (arg) loadSlot(+arg - 1); break;
     case 'auto': setAuto(Math.max(0, +(arg || 0) || 0)); break;
     case 'widget': { const [id, v] = (arg || '').split(/\s+/); if (id) setWidget(id, onOff(v ?? null, isOn(id))); break; }
+    case 'rate': { const [id, ms] = (arg || '').split(/\s+/); if (id) setRate(id, +(ms || 0) || 0); break; }
     case 'theme': if (arg && (THEMES as string[]).includes(arg)) setTheme(arg as Theme); break;
     case 'reload': location.reload(); break;
     default: console.warn('scp-wallpaper: unknown command', cmd);

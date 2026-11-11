@@ -1,0 +1,65 @@
+/* Three more Foundation skins for the widgets. Like dossier they redefine the colour tokens on the card, so widget
+   CSS keeps working unchanged, and add a header strip from the widget name (data-name).
+   scipnet  amber phosphor terminal: black panes, bracketed headers, scanlines
+   breach   containment-breach alert: red on black, hazard-striped header, pulsing border
+   o5       O5 Council: black lacquer and gold, serif capitals, hairline frames */
+
+/* ---- shared card frame ---- */
+  body.theme-scipnet .w, body.theme-breach .w, body.theme-o5 .w { border-radius: 0; text-shadow: none; padding: 2.9em 1.5em 1.3em; }
+  body.theme-scipnet .w::before, body.theme-breach .w::before, body.theme-o5 .w::before {
+    position: absolute; inset: 0 0 auto 0; z-index: auto; pointer-events: none; padding: .55em 1.5em; font-size: .7em; letter-spacing: .3em; text-transform: uppercase; }
+  :is(body.theme-scipnet, body.theme-breach, body.theme-o5) .w.reactorw { background: none; border: 0; box-shadow: none; padding: 0; }
+  :is(body.theme-scipnet, body.theme-breach, body.theme-o5) .w.reactorw::before { display: none; }
+  :is(body.theme-scipnet, body.theme-breach, body.theme-o5) :is(.cal-g span, .td li::before, .wk div::after, .np-art, .sw-toggle, .sw-toggle::after) { border-radius: 0; }
+  :is(body.theme-scipnet, body.theme-breach, body.theme-o5) .bar i b, :is(body.theme-scipnet, body.theme-breach, body.theme-o5) .sb i { background: var(--fg); box-shadow: none; }
+  :is(body.theme-scipnet, body.theme-breach, body.theme-o5) .bar i b.hot, :is(body.theme-scipnet, body.theme-breach, body.theme-o5) .sb i.hot { background: var(--accent); }
+  :is(body.theme-scipnet, body.theme-breach, body.theme-o5) .wk div.today::after { background: var(--accent); border-color: var(--accent); }
+  :is(body.theme-scipnet, body.theme-breach, body.theme-o5) .cal-g span.today { background: var(--accent); color: #000; }
+  :is(body.theme-scipnet, body.theme-breach, body.theme-o5) :is(.tin, .cd-e input, .btn) { background: transparent; color: var(--fg); border: 1px solid var(--line); border-radius: 0; }
+  :is(body.theme-scipnet, body.theme-breach, body.theme-o5) #menu { border-radius: 0; backdrop-filter: none; }
+  :is(body.theme-scipnet, body.theme-breach, body.theme-o5) #menu :is(.scene, .tab, select, .btn) { border-radius: 0; }
+
+/* ---- scipnet ---- */
+  body.theme-scipnet .w { --fg: #ffb347; --fg-dim: rgba(255,179,71,.55); --line: rgba(255,179,71,.22); --accent: #ff5a3c;
+    background: rgba(12,7,1,.88) repeating-linear-gradient(0deg, rgba(255,179,71,.035) 0 1px, transparent 1px 3px);
+    color: var(--fg); border: 1px solid var(--line); box-shadow: 0 0 1.4em rgba(255,150,40,.12) inset;
+    font-family: "JetBrainsMono NFM", "JetBrains Mono", ui-monospace, monospace; font-size: 1.45vh; }
+  body.theme-scipnet .w::before { content: "[ SCiPNET :: " attr(data-name) " ]"; color: #120a01; background: var(--fg); }
+  body.theme-scipnet .w .wc { text-shadow: 0 0 .5em rgba(255,179,71,.45); }
+  body.theme-scipnet .clk { font-weight: 400; letter-spacing: -.02em; }
+  body.theme-scipnet .clk::after { content: "_"; animation: scp-blink 1s steps(1) infinite; }
+  body.theme-scipnet #menu { --fg: #ffb347; --fg-dim: rgba(255,179,71,.55); --line: rgba(255,179,71,.25); --accent: #ff5a3c;
+    background: #0c0701; color: var(--fg); border: 1px solid var(--line); font-family: "JetBrainsMono NFM", ui-monospace, monospace; }
+  body.theme-scipnet #menu select option { background: #0c0701; color: #ffb347; }
+  @keyframes scp-blink { 50% { opacity: 0; } }
+
+/* ---- breach ---- */
+  body.theme-breach .w { --fg: #ffd9d4; --fg-dim: rgba(255,217,212,.55); --line: rgba(255,59,48,.35); --accent: #ffcc00;
+    background: rgba(20,2,2,.86); color: var(--fg); border: 1px solid #ff3b30; box-shadow: 0 0 0 1px rgba(255,59,48,.25), 0 0 1.6em rgba(255,30,20,.25);
+    font-family: "JetBrainsMono NFM", "JetBrains Mono", ui-monospace, monospace; font-size: 1.45vh; }
+  /* the pulse fades a glow layer's opacity (composited) instead of animating box-shadow (a repaint every frame) */
+  body.theme-breach:not(.editing) .w::after { content: ""; position: absolute; inset: -1px; pointer-events: none;
+    box-shadow: 0 0 0 1px rgba(255,59,48,.6), 0 0 2.4em rgba(255,30,20,.45); opacity: 0; animation: scp-alarm 2s ease-in-out infinite; }
+  body.theme-breach .w::before { content: "⚠ " attr(data-name) " · LOCKDOWN"; color: #120000; font-weight: 700;
+    background: linear-gradient(90deg, #ff3b30 0 62%, transparent 62%), repeating-linear-gradient(135deg, #ff3b30 0 1.1em, #ffcc00 1.1em 2.2em); }
+  body.theme-breach .clk { color: #ff5a4f; font-weight: 300; }
+  body.theme-breach .dt b { background: #ff3b30; color: #120000; padding: .1em .5em; opacity: 1; }
+  body.theme-breach #menu { --fg: #ffd9d4; --fg-dim: rgba(255,217,212,.55); --line: rgba(255,59,48,.4); --accent: #ffcc00;
+    background: #140202; color: var(--fg); border: 1px solid #ff3b30; font-family: "JetBrainsMono NFM", ui-monospace, monospace; }
+  body.theme-breach #menu select option { background: #140202; color: #ffd9d4; }
+  @keyframes scp-alarm { 50% { opacity: 1; } }
+
+/* ---- o5 ---- */
+  body.theme-o5 .w { --fg: #e8d9a8; --fg-dim: rgba(232,217,168,.55); --line: rgba(201,169,89,.3); --accent: #c9a959;
+    background: linear-gradient(160deg, rgba(14,13,11,.92), rgba(4,4,4,.92)); color: var(--fg);
+    border: 1px solid rgba(201,169,89,.55); outline: 1px solid rgba(201,169,89,.2); outline-offset: .35em;
+    font-family: "Cormorant Garamond", "EB Garamond", "Noto Serif", Georgia, serif; font-size: 1.6vh; }
+  body.theme-o5 .w::before { content: "O5 · " attr(data-name); color: var(--accent); background: none; border-bottom: 1px solid rgba(201,169,89,.35);
+    text-align: center; font-size: .66em; letter-spacing: .5em; }
+  body.theme-o5 .clk { font-weight: 400; letter-spacing: .02em; color: #f1e4b8; }
+  body.theme-o5 .bar span, body.theme-o5 .srow, body.theme-o5 .cal-h { letter-spacing: .22em; }
+  body.theme-o5 .bar i, body.theme-o5 .sb { height: 1px; }
+  body.theme-o5 .bar i b, body.theme-o5 .sb i { background: linear-gradient(90deg, #8a6d2c, #e8cf7e); }
+  body.theme-o5 #menu { --fg: #e8d9a8; --fg-dim: rgba(232,217,168,.55); --line: rgba(201,169,89,.3); --accent: #c9a959;
+    background: #0b0a08; color: var(--fg); border: 1px solid rgba(201,169,89,.55); }
+  body.theme-o5 #menu select option { background: #0b0a08; color: #e8d9a8; }

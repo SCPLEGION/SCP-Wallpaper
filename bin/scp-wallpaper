@@ -58,7 +58,7 @@ case ${1:-help} in
   reload)  cmd_build && cmd_reload ;;
   scenes)  cmd_scenes ;;
   build)   shift; cmd_build "$@" ;;
-  scene|next|prev|reseed|dash|layout|widget|auto|edit|menu|theme) send "$@" ;;
+  scene|next|prev|reseed|dash|layout|widget|rate|auto|edit|menu|theme) send "$@" ;;
   refresh) shift; send reload "$@" ;;
   dev)     cmd_build --watch ;;
   check)   exec "$ROOT/tools/check.sh" ;;
@@ -85,7 +85,8 @@ Page commands (via scp-wallpaperd; add --screen DP-3 to target one monitor):
   scene ID|N        show a scene (ids: scp-wallpaper scenes)      next | prev | reseed
   dash on|off       dashboard visibility (no arg = toggle)         edit on|off | menu on|off
   layout 1-3        load a saved layout                            widget ID on|off
-  auto MIN          auto-rotate every MIN minutes (0 = off)       theme scene|minimal|console|dossier
+  rate ID MS        widget refresh period in ms (0 = its default)
+  auto MIN          auto-rotate every MIN minutes (0 = off)       theme scene|minimal|console|dossier|scipnet|breach|o5
   install [flags]   (re)do the installation (links, services, iNiR config, patches)
 
 Docs: $ROOT/README.md and $ROOT/docs/
