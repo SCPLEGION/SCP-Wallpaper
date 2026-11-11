@@ -16,4 +16,6 @@
   .tw { animation: tw 4s ease-in-out infinite; }
   @keyframes tw { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
   /* Frozen while covered by a fullscreen window or hidden (app/stage.ts setPaused). */
-  body.paused #stage * { animation-play-state: paused !important; }
+  body.paused * { animation-play-state: paused !important; }
+  /* Transitions too: a bar easing to its new width repaints at 60 fps, and widgets keep updating while paused. */
+  body.paused * { transition: none !important; }

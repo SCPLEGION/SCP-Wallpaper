@@ -18,7 +18,7 @@
   .bars { width: 24em; display: grid; gap: 1.3em; }
   .bar span { display: flex; justify-content: space-between; font-size: .88em; letter-spacing: .14em; text-transform: uppercase; color: var(--fg-dim); margin-bottom: .5em; }
   .bar i { display: block; height: 2px; background: var(--line); position: relative; }
-  .bar i b { position: absolute; left: 0; top: 0; bottom: 0; background: var(--fg); width: 0; transition: width 1s linear; }
+  .bar i b { position: absolute; left: 0; top: 0; bottom: 0; background: var(--fg); width: 0; transition: width .4s ease-out; }
   .bar i b.hot { background: var(--accent); }
   #claude-w .bars { gap: 1.1em; }
 
@@ -41,7 +41,7 @@
   .srow.sm { font-size: .75em; margin-top: .65em; }
   .srow:first-child { margin-top: 0; }
   .sb { height: 2px; background: var(--line); margin-top: .4em; position: relative; }
-  .sb i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--fg); transition: width 1s linear; }
+  .sb i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--fg); transition: width .4s ease-out; }
   .sb i.hot { background: var(--accent); }
   .spark { display: block; width: 100%; height: 1.6em; margin-top: .3em; color: var(--accent); opacity: .85; }
   .sys-empty { font-size: .9em; color: var(--fg-dim); letter-spacing: .08em; }

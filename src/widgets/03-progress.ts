@@ -1,7 +1,8 @@
 // Progress of the day, week, month and year
 import type { Widget } from './types.ts';
 
-export default { id: 'progress', name: 'Postęp czasu', x: .06, y: .38, on: true, every: 1000,
+// Once a minute: a pixel of the day bar is ~5 min, and each width change runs a CSS transition (= repaints at 60 fps).
+export default { id: 'progress', name: 'Postęp czasu', x: .06, y: .38, on: true, every: 60000,
   html: () => '<div class="bars">' + ['dzień', 'tydzień', 'miesiąc', 'rok'].map(k => `<div class="bar"><span><em>${k}</em><em class="pv"></em></span><i><b></b></i></div>`).join('') + '</div>',
   update(el, n){
     const s = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds(), wd = (n.getDay() + 6) % 7;

@@ -47,17 +47,18 @@ else sys.on(d => {
 let last = 0, tPrev = 0;
 const frameHooks: ((n: number) => void)[] = [];
 export const onFrame = (f: (n: number) => void) => { frameHooks.push(f); };
-let nFrame = 0;
+let nFrame = 0, raf = 0;
 function frame(now: number){
-  requestAnimationFrame(frame);
+  // While paused no frame is requested at all: an idle rAF loop still keeps Chromium and the Qt host producing frames.
+  raf = app.paused ? 0 : requestAnimationFrame(frame);
   if (app.paused || now - last < 1000 / 30 - 1) return;
   const t = now / 1000, dt = Math.min(.2, t - tPrev); tPrev = t; last = now;
   if (app.run?.tick && !app.busy) app.run.tick(t, dt);
   nFrame++; frameHooks.forEach(f => f(nFrame));
 }
-export const startLoop = () => requestAnimationFrame(frame);
-/** Freeze animation (occluded by a fullscreen window, or hidden); widgets keep their own 1 s timer. */
-export function setPaused(on: boolean){ app.paused = on; document.body.classList.toggle('paused', on); }
+export const startLoop = () => { if (!raf) raf = requestAnimationFrame(frame); };
+/** Freeze animation (occluded by a fullscreen window, or hidden); widgets keep their own timers. */
+export function setPaused(on: boolean){ app.paused = on; document.body.classList.toggle('paused', on); if (!on) startLoop(); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); else if (!pauseLock) setPaused(false); });
 let pauseLock = false;
 /** Pause requested from outside (scp-wallpaperd); survives visibility changes until released. */

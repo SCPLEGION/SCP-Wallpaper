@@ -23,17 +23,22 @@ PY
   echo "Data files"
   for f in sysstats audio nowplaying control claude-usage; do printf '  %-16s updated %s\n' "$f.json" "$(age "$CACHE/$f.json")"; done
   echo "  (claude-usage.json only refreshes while a Claude Code session is running)"
-  echo "Layer surfaces (expect one inir:web-wallpaper per output)"
-  niri msg layers 2>/dev/null | awk '/^Output/ {o=$2; gsub(/[":]/, "", o)} /web-wallpaper/ {print "  " o ": web-wallpaper"}' | sort -u
+  echo "Hosts (expect one per output; duplicates: scp-wallpaper reload)"
+  hosts | awk '{printf "  %s: %s%s\n", $2, $1, ($1 > 1 ? "  <- duplicates" : "")}' 
   echo "iNiR patches"
   "$ROOT/patches/apply.sh" --check | sed 's/^/  /'
 }
 
-cmd_reload() {   # hosts are children of the shell: restarting it reloads the page
-  pkill -x qs 2>/dev/null; sleep 2
-  (setsid inir run >/tmp/scp-wallpaper-inir.log 2>&1 &)
-  echo "shell restarted, waiting for the hosts..."; sleep 14
-  niri msg layers 2>/dev/null | awk '/^Output/ {o=$2; gsub(/[":]/, "", o)} /web-wallpaper/ {print "  " o ": ok"}'
+hosts() {   # "<count> <screen>" per output; more than one means leaked hosts (a QML hot reload of iNiR leaves the old ones running)
+  pgrep -a -x qml6 | grep -o '[W]ebWallpaperHost\.qml .*--screen [^ ]*' | awk '{print $NF}' | sort | uniq -c
+}
+
+cmd_reload() {   # the hosts are children of the shell: restarting it reloads the page. Old hosts are killed first, orphans included.
+  pkill -f '[W]ebWallpaperHost\.qml' 2>/dev/null
+  inir restart >/tmp/scp-wallpaper-inir.log 2>&1 || { echo "inir restart failed, see /tmp/scp-wallpaper-inir.log"; return 1; }
+  echo "shell restarted, waiting for the hosts..."
+  for _ in $(seq 30); do sleep 1; [ "$(hosts | wc -l)" -ge "$(niri msg --json outputs | python3 -I -c 'import json,sys; print(len(json.load(sys.stdin)))')" ] && break; done
+  hosts | awk '{printf "  %s: %s host%s\n", $2, $1, ($1 > 1 ? "s (duplicates!)" : "")}'
 }
 
 cmd_scenes() {
