@@ -14,7 +14,7 @@ iNiR shell ──starts──▶ WebWallpaperHost.qml (one per monitor, QtWebEng
                               ▲
    scp-wallpaperd ─▶ ~/.cache/scp-center/{sysstats,audio,nowplaying}.json   live data
                   ─▶ ~/.cache/scp-center/control.json   pause per screen (niri: covered?), CLI commands
-   claude-hud     ─▶ ~/.cache/scp-center/claude-usage.json
+   usage-saver    ─▶ ~/.cache/scp-center/claude-usage.json ─▶ scp-wallpaperd (desk) ─▶ desk.json
 ```
 
 ## Quick start

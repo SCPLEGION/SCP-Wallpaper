@@ -10,7 +10,7 @@ Start with `scp-wallpaper status` and `scp-wallpaper check`.
 | `scene`/`dash`/... commands do nothing | `scp-wallpaperd` is down (`systemctl --user status scp-wallpaperd`), or the page lacks `?screen=` (patch 0002) and you used `--screen`. Commands sent before a page loaded are not replayed. |
 | Wallpaper frozen although nothing covers it | The active window on that output's workspace covers ≥ 92% of it (a maximized column with gaps counts). Shrink it or open the overview. Floating windows never pause. |
 | Nothing happens on click | Interactive mode is off (Settings → Background). |
-| Claude widget is dim / empty | `claude-usage.json` is only refreshed while a Claude Code session is running (claude-hud writes it). Dims after 15 min. Check `display.externalUsageWritePath` in `~/.claude/plugins/claude-hud/config.json`. |
+| Claude widget is dim / empty | `claude-usage.json` is written by the usage-saver plugin (`~/.claude/local-mods/plugins/usage-saver`) only while a Claude Code session runs, at least once a minute. Dims after 15 min and shows how old the data is. scp-wallpaperd's desk producer merges it into `desk.json`. |
 | System widget says "brak danych" | `systemctl --user status scp-wallpaperd`; `scp-wallpaper logs` (a producer that crashes is restarted after 5 s and logged). |
 | Equalizer is flat | Nothing is playing, or the daemon is down. It follows the default sink; switching output devices is picked up within ~5 s. |
 | Equalizer shows "brak sygnału audio" | `audio.json` is older than 1.5 s: the service is not running. |

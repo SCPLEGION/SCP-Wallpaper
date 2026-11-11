@@ -49,4 +49,6 @@ The query string carries `?screen=<output>` (added by patch 0002).
 `control.json` (scp-wallpaperd): `{"t": <ms>, "pause": {"DP-3": true, ...}, "cmds": [{"seq", "screen": null|"DP-3", "cmd", "arg"}]}`.
 The last 32 commands are kept; a page runs only those with a `seq` above the highest it saw on its first read.
 
-`claude-usage.json` (claude-hud): `{"updated_at": ISO, "five_hour": {"used_percentage", "resets_at"}, "seven_day": {…}}`.
+`claude-usage.json` (usage-saver plugin): `{"updated_at": ISO, "five_hour": {"used_percentage", "resets_at"}, "seven_day": {…}, "tier": "eco"|"save"|"max"|null}`.
+`desk.json` (scp-wallpaperd desk): `{"t", "claude": {"usage": <claude-usage.json>, "sessions": [{"state", "since"}]}, "center": {"profile", "effect", "brightness", "dial", "shift"}}`.
+`control.json` also carries `known`: per screen (`"*"` = all) the last scene/dash/theme/auto/layout/widgets set through the daemon.

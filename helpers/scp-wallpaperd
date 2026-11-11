@@ -14,10 +14,12 @@ Pages cannot talk back (file:// page, no network), so everything goes one way th
 
 Client mode (used by bin/scp-wallpaper):  scp-wallpaperd send <cmd> [arg] [--screen NAME]   |   scp-wallpaperd state
 """
+import glob
 import importlib.machinery
 import importlib.util
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -31,7 +33,7 @@ CACHE = os.path.expanduser("~/.cache/scp-center")
 CONTROL = os.path.join(CACHE, "control.json")
 NIRI = os.path.join(CACHE, "niri.json")
 SOCK = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "scp-wallpaperd.sock")
-PRODUCERS = ["scp-sysstats", "scp-audioviz", "scp-nowplaying"]
+PRODUCERS = ["scp-sysstats", "scp-audioviz", "scp-nowplaying", "scp-desk"]
 COMMANDS = {"scene", "next", "prev", "reseed", "dash", "layout", "widget", "auto", "edit", "menu", "theme", "reload"}
 KEEP = 32               # commands kept in control.json; a page only runs those newer than what it saw at load
 COVER = 0.92            # a window covering this fraction of the output's width and height hides the wallpaper
@@ -46,16 +48,17 @@ class Control:
 
     def __init__(self):
         self.lock = threading.Lock()
-        self.pause, self.cmds, self.seq = {}, [], 0
+        self.pause, self.cmds, self.seq, self.known = {}, [], 0, {}
         try:  # continue the sequence so pages that are already open do not miss or replay anything
             old = json.load(open(CONTROL))
             self.cmds = old.get("cmds", [])[-KEEP:]
             self.seq = max([c["seq"] for c in self.cmds], default=0)
+            self.known = old.get("known") or {}
         except (OSError, ValueError, KeyError, TypeError):
             pass
 
     def _write(self):
-        snap = {"t": int(time.time() * 1000), "pause": self.pause, "cmds": self.cmds}
+        snap = {"t": int(time.time() * 1000), "pause": self.pause, "cmds": self.cmds, "known": self.known}
         tmp = CONTROL + ".tmp"
         with open(tmp, "w") as f:
             json.dump(snap, f)
@@ -71,12 +74,44 @@ class Control:
         with self.lock:
             self.seq += 1
             self.cmds = (self.cmds + [{"seq": self.seq, "screen": screen, "cmd": cmd, "arg": arg}])[-KEEP:]
+            remember(self.known, cmd, arg, screen)
             self._write()
             return self.seq
 
     def heartbeat(self):
         with self.lock:
             self._write()
+
+
+def remember(known, cmd, arg, screen):
+    """Last value set through the daemon, per screen ("*" = all). Pages cannot write back, so changes
+    made in the page's own menu are not seen here: this is what SCP Center last asked for."""
+    if cmd in ("scene", "dash", "theme", "auto", "layout") and arg is not None:
+        targets = [screen] if screen else ["*"] + [k for k in known if k != "*"]
+        for t in targets:
+            known.setdefault(t, {})[cmd] = arg
+    elif cmd == "widget" and arg:
+        wid, _, val = arg.partition(" ")
+        if val in ("on", "off"):
+            for t in [screen] if screen else ["*"] + [k for k in known if k != "*"]:
+                known.setdefault(t, {}).setdefault("widgets", {})[wid] = val == "on"
+
+
+def catalog(root=os.path.dirname(HERE)):
+    """Scene/widget ids and names (menu order) and themes, read from src/ for SCP Center's wallpaper page."""
+    def items(kind):
+        out = []
+        for path in sorted(glob.glob(os.path.join(root, "src", kind, "[0-9]*.ts"))):
+            m = re.search(r"id: '([^']+)', name: '([^']+)'", open(path).read())
+            if m:
+                out.append(list(m.groups()))
+        return out
+    try:
+        themes = re.search(r"THEMES: Theme\[\] = \[([^\]]*)\]", open(os.path.join(root, "src", "app", "model.ts")).read())
+        themes = re.findall(r"'([^']+)'", themes.group(1)) if themes else []
+    except OSError:
+        themes = []
+    return {"scenes": items("scenes"), "widgets": items("widgets"), "themes": themes}
 
 
 def load_producer(name):
@@ -203,7 +238,7 @@ def serve(ctl):
             try:
                 req = json.loads(conn.makefile().readline())
                 if req.get("cmd") == "state":
-                    reply = {"ok": True, "pause": ctl.pause, "seq": ctl.seq, "threads": sorted(t.name for t in threading.enumerate())}
+                    reply = {"ok": True, "pause": ctl.pause, "seq": ctl.seq, "known": ctl.known, "catalog": catalog(), "threads": sorted(t.name for t in threading.enumerate())}
                 elif req.get("cmd") in COMMANDS:
                     reply = {"ok": True, "seq": ctl.command(req["cmd"], req.get("arg"), req.get("screen"))}
                 else:
@@ -217,6 +252,11 @@ def serve(ctl):
 
 
 def selftest():
+    c = catalog()
+    assert len(c["scenes"]) >= 15 and ["claude", "Użycie Claude"] in c["widgets"] and "dossier" in c["themes"], c
+    k = {}
+    remember(k, "scene", "radar", "DP-3"); remember(k, "dash", "on", None); remember(k, "widget", "todo off", "DP-3")
+    assert k == {"DP-3": {"scene": "radar", "dash": "on", "widgets": {"todo": False}}, "*": {"dash": "on"}}, k
     outs = {"A": {"logical": {"width": 2560, "height": 1440}}, "B": {"logical": {"width": 2560, "height": 1440}}}
     ws = {1: {"id": 1, "output": "A", "is_active": True, "active_window_id": 10},
           2: {"id": 2, "output": "B", "is_active": True, "active_window_id": 11}}

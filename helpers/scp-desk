@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""Desk feed for the SCP wallpaper dashboard: Claude Code and SCP Center state.
+
+Every 2 s merges, into ~/.cache/scp-center/desk.json (atomic):
+  claude    usage snapshot written by the usage-saver plugin (claude-usage.json)
+            plus the live sessions from claude-sessions/*.json (dead pids dropped)
+  center    SCP Center's active profile, lighting effect and dial mode
+
+Read-only: it never touches SCP Center or Claude Code state.
+"""
+import glob
+import json
+import os
+import time
+
+INTERVAL = 2.0
+CACHE = os.path.expanduser("~/.cache/scp-center")
+OUT = os.path.join(CACHE, "desk.json")
+CENTER_STATE = os.path.expanduser("~/.config/scp-center/state.json")
+LIGHTING = os.path.expanduser("~/.cache/openrazer-effects/state.json")
+
+
+def load(path, default=None):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return default
+
+
+def alive(pid):
+    try:
+        os.kill(int(pid), 0)
+        return True
+    except (OSError, TypeError, ValueError):
+        return False
+
+
+def sessions():
+    out = []
+    for path in glob.glob(os.path.join(CACHE, "claude-sessions", "*.json")):
+        s = load(path)
+        if isinstance(s, dict) and alive(s.get("pid")):
+            out.append({"state": s.get("state"), "since": s.get("since")})
+    return sorted(out, key=lambda s: s.get("since") or 0)
+
+
+def snapshot():
+    center, light = load(CENTER_STATE, {}), load(LIGHTING, {})
+    cue = load(os.path.join(CACHE, "dial_cue.json"), {})
+    return {
+        "t": int(time.time() * 1000),
+        "claude": {"usage": load(os.path.join(CACHE, "claude-usage.json")), "sessions": sessions()},
+        "center": {
+            "profile": center.get("active_profile"),
+            "effect": light.get("key"),
+            "brightness": light.get("brightness"),
+            "dial": cue.get("mode"),
+            "shift": bool(cue.get("shift")),
+        },
+    }
+
+
+def write(snap):
+    tmp = OUT + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(snap, f)
+    os.replace(tmp, OUT)
+
+
+def main():
+    os.makedirs(CACHE, exist_ok=True)
+    while True:
+        write(snapshot())
+        time.sleep(INTERVAL)
+
+
+if __name__ == "__main__":
+    main()

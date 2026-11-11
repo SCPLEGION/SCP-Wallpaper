@@ -8,7 +8,7 @@ export const W = 1600, H = 900;
 const HOME_URL = 'file://' + ((location.pathname.match(/^\/home\/[^/]+/) || ['/home/scplegion'])[0]);
 const CACHE_URL = HOME_URL + '/.cache/scp-center/';
 export const PATHS = {
-  usage: CACHE_URL + 'claude-usage.json',    // claude-hud plugin (display.externalUsageWritePath)
+  desk: CACHE_URL + 'desk.json',             // scp-wallpaperd (desk): Claude usage + sessions, SCP Center state
   sys: CACHE_URL + 'sysstats.json',          // scp-wallpaperd (sysstats)
   audio: CACHE_URL + 'audio.json',           // scp-wallpaperd (audio)
   nowplaying: CACHE_URL + 'nowplaying.json', // scp-wallpaperd (nowplaying)

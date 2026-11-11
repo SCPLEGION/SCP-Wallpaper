@@ -13,7 +13,7 @@ Git repo, branch `Main`, no remote. iNiR's `background.backend.web.source` (`~/.
 - Scenes/widgets have stable `id`s used in saved state + CLI: never rename. State is `localStorage['scp-wallpaper']` v2; shape changes need a step in `app/migrate.ts` + test.
 - Patch `0002` (persistent per-screen profile + `?screen=`) is still needed; 0001 is upstream. After `./setup update` in `~/Dokumenty/Packets/inir`: `scp-wallpaper patch`, then `reload` (applying it hot-reloads quickshell, which leaks orphaned hosts; `status` shows hosts per output).
 - Anything that changes every second must not trigger CSS transitions (60 fps repaint); paused pages request no frames.
-- Data: `sysstats.json`, `audio.json` (sink monitor only, never mic), `nowplaying.json`, `control.json` from scp-wallpaperd; `claude-usage.json` from claude-hud (only while a Claude session runs).
+- Data: `sysstats.json`, `audio.json` (sink monitor only, never mic), `nowplaying.json`, `control.json` from scp-wallpaperd; `desk.json` from scp-wallpaperd's desk producer = `claude-usage.json` (written by the usage-saver plugin in `~/.claude/local-mods`, only while a Claude session runs) + live `claude-sessions/` + SCP Center profile/effect/dial. SCP Center drives the page through the daemon socket (`scpcenter/wallpaper` in SCP-Center: Tapeta page, `wallpaper` action type); `state` returns `known` (last values set through the daemon) and `catalog` (scenes/widgets/themes parsed from src/).
 - Interactive web mode is on, so iNiR's own desktop widgets aren't clickable.
 
 ## Testing

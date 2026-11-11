@@ -11,6 +11,7 @@ import todo from './09-todo.ts';
 import countdown from './10-countdown.ts';
 import nowplaying from './11-nowplaying.ts';
 import workspaces from './12-workspaces.ts';
+import center from './13-center.ts';
 import type { Widget } from './types.ts';
 
-export const WIDGETS: Widget[] = [clock, reactor, progress, week, claude, system, calendar, pomo, todo, countdown, nowplaying, workspaces];
+export const WIDGETS: Widget[] = [clock, reactor, progress, week, claude, system, calendar, pomo, todo, countdown, nowplaying, workspaces, center];

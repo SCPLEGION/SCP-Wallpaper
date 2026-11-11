@@ -21,8 +21,8 @@ PY
   printf '  %-16s %s\n' scp-wallpaperd "$(systemctl --user is-active scp-wallpaperd.service 2>&1)"
   "$ROOT/helpers/scp-wallpaperd" state 2>/dev/null | python3 -I -c 'import json,sys; d=json.load(sys.stdin); print("  covered outputs  " + (", ".join(k for k,v in d["pause"].items() if v) or "none"))' || true
   echo "Data files"
-  for f in sysstats audio nowplaying control claude-usage; do printf '  %-16s updated %s\n' "$f.json" "$(age "$CACHE/$f.json")"; done
-  echo "  (claude-usage.json only refreshes while a Claude Code session is running)"
+  for f in sysstats audio nowplaying niri desk control claude-usage; do printf '  %-16s updated %s\n' "$f.json" "$(age "$CACHE/$f.json")"; done
+  echo "  (claude-usage.json: usage-saver plugin, only while a Claude Code session is running)"
   echo "Hosts (expect one per output; duplicates: scp-wallpaper reload)"
   hosts | awk '{printf "  %s: %s%s\n", $2, $1, ($1 > 1 ? "  <- duplicates" : "")}' 
   echo "iNiR patches"

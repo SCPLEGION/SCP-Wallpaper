@@ -72,7 +72,7 @@ PY
 fi
 
 if [ $hud = 1 ]; then
-  say "Enabling the Claude usage snapshot (claude-hud)"
+  say "Enabling the legacy claude-hud usage snapshot (usage-saver writes it now; harmless if claude-hud is gone)"
   if [ -f "$HUD_CFG" ]; then
     python3 -I - "$HUD_CFG" "$CACHE/claude-usage.json" <<'PY'
 import json, sys

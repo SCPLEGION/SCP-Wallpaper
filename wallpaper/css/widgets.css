@@ -140,3 +140,13 @@
   body.theme-dossier .ws span { border-radius: 0; border-color: var(--fg); }
   body.theme-dossier .ws span.on { background: var(--fg); color: var(--paper); box-shadow: none; }
   body.hud .ws span { border-radius: 0; }
+
+  /* Claude: session / saver line under the bars */
+  .cl-foot { display: flex; flex-wrap: wrap; gap: .4em 1.1em; margin-top: 1em; font-size: .75em; letter-spacing: .12em; text-transform: uppercase; color: var(--fg-dim); }
+  .cl-foot .cl-work { color: var(--fg); }
+  .cl-foot .cl-wait, .cl-foot .cl-tier.max { color: var(--accent); }
+  .cl-foot .cl-tier.save { color: var(--fg); }
+
+  /* SCP Center */
+  .ccw { min-width: 16em; }
+  .ccw .cc-shift { color: var(--accent); }

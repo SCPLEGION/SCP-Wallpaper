@@ -10,15 +10,21 @@ export interface SysStats {
   load: number[]; uptime: number; net?: { iface: string; rx: number; tx: number } | null;
   disks?: { mount: string; used: number; total: number }[];
 }
-export interface UsageWindow { used_percentage?: number; resets_at?: string }
-export interface Usage { updated_at: string; five_hour?: UsageWindow; seven_day?: UsageWindow }
+export interface UsageWindow { used_percentage?: number; resets_at?: string | null }
+export interface Usage { updated_at: string; five_hour?: UsageWindow | null; seven_day?: UsageWindow | null; tier?: 'eco' | 'save' | 'max' | null }
+export interface ClaudeSession { state: 'working' | 'waiting' | string; since: number }
+export interface Desk {
+  t: number;
+  claude: { usage: Usage | null; sessions: ClaudeSession[] };
+  center: { profile: string | null; effect: string | null; brightness: number | null; dial: string | null; shift: boolean };
+}
 export interface NowPlaying { t: number; status: 'playing' | 'paused' | 'none'; player: string; title: string; artist: string; album: string; art?: string; position: number; length: number }
 export interface AudioFrame { t: number; b: number[] }
 export interface NiriOutput { workspaces: { idx: number; name: string | null; active: boolean; windows: number }[]; title: string; app: string }
 export interface Niri { t: number; outputs: Record<string, NiriOutput> }
 
 export const sys = new Source<SysStats>();
-export const usage = new Source<Usage>();
+export const desk = new Source<Desk>();
 export const np = new Source<NowPlaying>();
 export const audio = new Source<AudioFrame>();
 export const niri = new Source<Niri>();
@@ -50,9 +56,9 @@ export function poll<T>(src: Source<T>, url: string, base = Infinity){
 
 export const pollers = {
   sys: poll(sys, PATHS.sys, 2000),
-  usage: poll(usage, PATHS.usage, 20000),
+  desk: poll(desk, PATHS.desk, 5000),
   np: poll(np, PATHS.nowplaying, 1000),
   audio: poll(audio, PATHS.audio),        // only while a scene subscribes
   niri: poll(niri, PATHS.niri, 1000),
 };
-export const startSources = () => { pollers.sys.start(); pollers.usage.start(); pollers.np.start(); pollers.niri.start(); };
+export const startSources = () => { pollers.sys.start(); pollers.desk.start(); pollers.np.start(); pollers.niri.start(); };
