@@ -56,7 +56,7 @@ export function poll<T>(src: Source<T>, url: string, base = Infinity){
 
 export const pollers = {
   sys: poll(sys, PATHS.sys, 2000),
-  desk: poll(desk, PATHS.desk, 5000),
+  desk: poll(desk, PATHS.desk, 500),
   np: poll(np, PATHS.nowplaying, 1000),
   audio: poll(audio, PATHS.audio),        // only while a scene subscribes
   niri: poll(niri, PATHS.niri, 1000),
