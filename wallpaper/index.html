@@ -49,46 +49,7 @@
   </div>
 </div>
 
-<!-- Classic scripts, order matters (they share one global scope). See docs/ARCHITECTURE.md. -->
-<script src="js/core/config.js"></script>
-<script src="js/core/util.js"></script>
-<script src="js/core/draw.js"></script>
-<script src="js/core/xhr.js"></script>
-<script src="js/data/world.js"></script>
-<script src="js/data/sites.js"></script>
-<script src="js/scenes/registry.js"></script>
-<script src="js/scenes/01-dusk.js"></script>
-<script src="js/scenes/02-moon.js"></script>
-<script src="js/scenes/03-waves.js"></script>
-<script src="js/scenes/04-topo.js"></script>
-<script src="js/scenes/05-orbits.js"></script>
-<script src="js/scenes/06-dots.js"></script>
-<script src="js/scenes/07-nebula.js"></script>
-<script src="js/scenes/08-reactor.js"></script>
-<script src="js/scenes/09-radar.js"></script>
-<script src="js/scenes/10-hexgrid.js"></script>
-<script src="js/scenes/11-datastream.js"></script>
-<script src="js/scenes/12-circuit.js"></script>
-<script src="js/scenes/13-globe.js"></script>
-<script src="js/scenes/14-equalizer.js"></script>
-<script src="js/scenes/15-dashboard.js"></script>
-<script src="js/app/state.js"></script>
-<script src="js/app/menu.js"></script>
-<script src="js/widgets/helpers.js"></script>
-<script src="js/widgets/registry.js"></script>
-<script src="js/data/sources.js"></script>
-<script src="js/widgets/01-clock.js"></script>
-<script src="js/widgets/02-reactor.js"></script>
-<script src="js/widgets/03-progress.js"></script>
-<script src="js/widgets/04-week.js"></script>
-<script src="js/widgets/05-claude.js"></script>
-<script src="js/widgets/06-system.js"></script>
-<script src="js/widgets/07-calendar.js"></script>
-<script src="js/widgets/08-pomo.js"></script>
-<script src="js/widgets/09-todo.js"></script>
-<script src="js/widgets/10-countdown.js"></script>
-<script src="js/widgets/11-nowplaying.js"></script>
-<script src="js/app/dashboard.js"></script>
-<script src="js/app/main.js"></script>
+<!-- Built from src/ by `npm run build` (one classic script: ES modules do not load on file://). -->
+<script src="dist/app.js"></script>
 </body>
 </html>

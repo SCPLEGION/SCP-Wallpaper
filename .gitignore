@@ -3,3 +3,5 @@ __pycache__/
 *.png
 *.log
 .env
+node_modules/
+wallpaper/dist/

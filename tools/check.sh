@@ -4,26 +4,28 @@ set -u
 ROOT=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
 W=$ROOT/wallpaper; fail=0
 ok()  { printf '  \033[32mok\033[0m   %s\n' "$1"; }
-bad() { printf '  \033[31mFAIL\033[0m %s\n' "$1"; fail=1; }
+bad()  { printf "  \033[31mFAIL\033[0m %b\n" "$1"; fail=1; }
 
-echo "JavaScript syntax"
-for f in $(find "$W/js" -name '*.js' | sort); do node --check "$f" 2>/tmp/scp-wp-check.err && : || { bad "${f#$ROOT/}: $(head -1 /tmp/scp-wp-check.err)"; }; done
-[ $fail = 0 ] && ok "$(find "$W/js" -name '*.js' | wc -l) files parse"
+cd "$ROOT"
+[ -d node_modules ] || { echo "node_modules missing: run  npm ci  (or scp-wallpaper install)"; exit 1; }
 
-echo "index.html <-> files on disk"
-listed=$(grep -o 'src="[^"]*"' "$W/index.html" | sed 's/src="//; s/"$//' | sort)
-for s in $listed; do [ -f "$W/$s" ] || bad "listed but missing: $s"; done
-for f in $(cd "$W" && find js -name '*.js' | sort); do echo "$listed" | grep -qx "$f" || bad "not loaded by index.html: $f"; done
-css=$(grep -o 'href="[^"]*"' "$W/index.html" | sed 's/href="//; s/"$//'); for s in $css; do [ -f "$W/$s" ] || bad "missing stylesheet: $s"; done
-[ $fail = 0 ] && ok "all scripts/styles referenced exist and every js file is loaded"
+echo "TypeScript"
+out=$(node_modules/.bin/tsc --noEmit 2>&1) && ok "tsc --noEmit" || bad "type errors:\n$(echo "$out" | head -20)"
+
+echo "Unit tests"
+out=$(node --test 'test/**/*.test.ts' 2>&1) && ok "$(echo "$out" | grep -a "^ℹ pass" | sed "s/ℹ pass //") tests pass" || bad "unit tests:\n$(echo "$out" | grep -a -B2 -A8 'not ok' | head -30)"
+
+echo "Bundle"
+out=$(node tools/build.mjs 2>&1) && ok "wallpaper/dist/app.js built" || bad "build failed:\n$out"
+grep -q 'src="dist/app.js"' "$W/index.html" && ok "index.html loads the bundle" || bad "index.html does not load dist/app.js"
 
 echo "Python helpers"
-for f in "$ROOT"/helpers/*; do python3 -I -m py_compile "$f" 2>/dev/null && ok "$(basename "$f") compiles" || bad "$(basename "$f") does not compile"; rm -rf "$ROOT/helpers/__pycache__"; done
+for f in "$ROOT"/helpers/*; do python3 -I -m py_compile "$f" 2>/dev/null && ok "$(basename "$f") compiles" || bad "$(basename "$f") does not compile"; done; rm -rf "$ROOT/helpers/__pycache__"
 python3 -I "$ROOT/helpers/scp-audioviz" --selftest >/dev/null 2>&1 && ok "scp-audioviz --selftest" || bad "scp-audioviz --selftest"
 
 echo "Shader"
 if command -v glslangValidator >/dev/null; then
-  node -e "const s=require('fs').readFileSync('$W/js/scenes/07-nebula.js','utf8');const m=s.match(/NEBULA_FRAG = \`([\s\S]*?)\`;/);require('fs').writeFileSync('/tmp/scp-wp-neb.frag','#version 100\n'+m[1])" \
+  node -e "const s=require('fs').readFileSync('$ROOT/src/scenes/07-nebula.ts','utf8');const m=s.match(/NEBULA_FRAG = \`([\s\S]*?)\`;/);require('fs').writeFileSync('/tmp/scp-wp-neb.frag','#version 100\n'+m[1])" \
     && glslangValidator -S frag /tmp/scp-wp-neb.frag >/dev/null 2>&1 && ok "nebula fragment shader validates" || bad "nebula fragment shader"
 else echo "  (glslangValidator not installed, skipped)"; fi
 

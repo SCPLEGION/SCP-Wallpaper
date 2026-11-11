@@ -27,10 +27,13 @@ fi
 
 say "Checking requirements"
 miss=0
-for c in python3 parec playerctl systemctl; do command -v $c >/dev/null || { echo "  missing: $c"; miss=1; }; done
+for c in python3 parec playerctl systemctl node npm; do command -v $c >/dev/null || { echo "  missing: $c"; miss=1; }; done
 python3 -I -c "import numpy" 2>/dev/null || { echo "  missing: python numpy (needed by scp-audioviz)"; miss=1; }
 command -v qml6 >/dev/null || echo "  note: qml6 not found (iNiR's web wallpaper host needs Qt6 qml + QtWebEngine)"
 [ $miss = 0 ] || { echo "Install the missing packages first."; exit 1; }
+
+say "Building the page (npm ci + esbuild)"
+(cd "$ROOT" && npm ci --silent && node tools/build.mjs)
 
 say "Linking commands into $BIN"
 mkdir -p "$BIN" "$CACHE"

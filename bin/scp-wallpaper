@@ -36,30 +36,36 @@ cmd_reload() {   # hosts are children of the shell: restarting it reloads the pa
 }
 
 cmd_scenes() {
-  i=0; for f in "$ROOT"/wallpaper/js/scenes/[0-9]*.js; do
-    printf '%2d  %s\n' "$i" "$(sed -n 1p "$f" | sed 's#^// ##')"; i=$((i+1)); done
-  echo; echo "widgets:"; for f in "$ROOT"/wallpaper/js/widgets/[0-9]*.js; do printf '    %s\n' "$(basename "$f" .js | sed 's/^[0-9]*-//')"; done
+  i=0; for f in "$ROOT"/src/scenes/[0-9]*.ts; do
+    printf '%2d  %-11s %s\n' "$i" "$(grep -o "id: '[^']*'" "$f" | head -1 | cut -d"'" -f2)" "$(sed -n 1p "$f" | sed 's#^// ##')"; i=$((i+1)); done
+  echo; echo "widgets:"; for f in "$ROOT"/src/widgets/[0-9]*.ts; do printf '    %-11s %s\n' "$(grep -o "id: '[^']*'" "$f" | head -1 | cut -d"'" -f2)" "$(sed -n 1p "$f" | sed 's#^// ##')"; done
 }
+
+cmd_build() { (cd "$ROOT" && { [ -d node_modules ] || npm ci --silent; } && node tools/build.mjs "$@"); }
 
 cmd_logs() { journalctl --user -u scp-sysstats -u scp-audioviz -n "${1:-30}" --no-pager; }
 
 case ${1:-help} in
   status)  cmd_status ;;
-  reload)  cmd_reload ;;
+  reload)  cmd_build && cmd_reload ;;
   scenes)  cmd_scenes ;;
+  build)   shift; cmd_build "$@" ;;
+  dev)     cmd_build --watch ;;
   check)   exec "$ROOT/tools/check.sh" ;;
   preview) shift; exec "$ROOT/tools/preview.sh" "$@" ;;
   patch)   shift; exec "$ROOT/patches/apply.sh" "$@" ;;
   logs)    shift; cmd_logs "$@" ;;
   install) shift; exec "$ROOT/install.sh" "$@" ;;
-  edit)    ${EDITOR:-nano} "$ROOT/wallpaper/js/app/dashboard.js" ;;
+  edit)    ${EDITOR:-nano} "$ROOT/src/app/dashboard.ts" ;;
   help|-h|--help|*)
     cat <<H
 scp-wallpaper <command>
 
   status            what is running, which page iNiR shows, data freshness, patch state
-  reload            restart the iNiR shell so the hosts reload the page (needed after editing wallpaper/)
-  scenes            list scenes (0-based index = menu order) and widgets
+  build             bundle src/ into wallpaper/dist/app.js (runs npm ci the first time)
+  dev               rebuild on every change in src/ (then reload to see it)
+  reload            build, then restart the iNiR shell so the hosts reload the page
+  scenes            list scenes (index = menu order, id) and widgets
   preview N [png]   render scene N offscreen (SEED=… and a 3rd arg of hash params are supported)
   check             syntax + index.html consistency + shader + smoke test of every scene/widget
   patch [--check]   (re)apply the local iNiR patches, e.g. after ./setup update
