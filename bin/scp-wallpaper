@@ -18,9 +18,10 @@ w = b.get("web", {})
 print(f"iNiR      provider={b.get('provider')}  interactive={w.get('interactive')}\n          source={w.get('source')}")
 PY
   echo "Services"
-  for u in scp-sysstats scp-audioviz; do printf '  %-16s %s\n' "$u" "$(systemctl --user is-active $u.service 2>&1)"; done
+  printf '  %-16s %s\n' scp-wallpaperd "$(systemctl --user is-active scp-wallpaperd.service 2>&1)"
+  "$ROOT/helpers/scp-wallpaperd" state 2>/dev/null | python3 -I -c 'import json,sys; d=json.load(sys.stdin); print("  covered outputs  " + (", ".join(k for k,v in d["pause"].items() if v) or "none"))' || true
   echo "Data files"
-  for f in sysstats audio claude-usage; do printf '  %-16s updated %s\n' "$f.json" "$(age "$CACHE/$f.json")"; done
+  for f in sysstats audio nowplaying control claude-usage; do printf '  %-16s updated %s\n' "$f.json" "$(age "$CACHE/$f.json")"; done
   echo "  (claude-usage.json only refreshes while a Claude Code session is running)"
   echo "Layer surfaces (expect one inir:web-wallpaper per output)"
   niri msg layers 2>/dev/null | awk '/^Output/ {o=$2; gsub(/[":]/, "", o)} /web-wallpaper/ {print "  " o ": web-wallpaper"}' | sort -u
@@ -43,13 +44,17 @@ cmd_scenes() {
 
 cmd_build() { (cd "$ROOT" && { [ -d node_modules ] || npm ci --silent; } && node tools/build.mjs "$@"); }
 
-cmd_logs() { journalctl --user -u scp-sysstats -u scp-audioviz -n "${1:-30}" --no-pager; }
+cmd_logs() { journalctl --user -u scp-wallpaperd -n "${1:-30}" --no-pager; }
+
+send() { exec "$ROOT/helpers/scp-wallpaperd" send "$@"; }
 
 case ${1:-help} in
   status)  cmd_status ;;
   reload)  cmd_build && cmd_reload ;;
   scenes)  cmd_scenes ;;
   build)   shift; cmd_build "$@" ;;
+  scene|next|prev|reseed|dash|layout|widget|auto|edit|menu) send "$@" ;;
+  refresh) shift; send reload "$@" ;;
   dev)     cmd_build --watch ;;
   check)   exec "$ROOT/tools/check.sh" ;;
   preview) shift; exec "$ROOT/tools/preview.sh" "$@" ;;
@@ -63,13 +68,19 @@ scp-wallpaper <command>
 
   status            what is running, which page iNiR shows, data freshness, patch state
   build             bundle src/ into wallpaper/dist/app.js (runs npm ci the first time)
-  dev               rebuild on every change in src/ (then reload to see it)
-  reload            build, then restart the iNiR shell so the hosts reload the page
+  dev               rebuild on every change in src/ and refresh the pages in place
+  refresh           reload the pages in place (no shell restart); reload = build + restart the shell
   scenes            list scenes (index = menu order, id) and widgets
   preview N [png]   render scene N offscreen (SEED=… and a 3rd arg of hash params are supported)
   check             syntax + index.html consistency + shader + smoke test of every scene/widget
   patch [--check]   (re)apply the local iNiR patches, e.g. after ./setup update
-  logs [N]          journal of the helper services
+  logs [N]          journal of scp-wallpaperd
+
+Page commands (via scp-wallpaperd; add --screen DP-3 to target one monitor):
+  scene ID|N        show a scene (ids: scp-wallpaper scenes)      next | prev | reseed
+  dash on|off       dashboard visibility (no arg = toggle)         edit on|off | menu on|off
+  layout 1-3        load a saved layout                            widget ID on|off
+  auto MIN          auto-rotate every MIN minutes (0 = off)
   install [flags]   (re)do the installation (links, services, iNiR config, patches)
 
 Docs: $ROOT/README.md and $ROOT/docs/

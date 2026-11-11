@@ -20,8 +20,9 @@ out=$(node tools/build.mjs 2>&1) && ok "wallpaper/dist/app.js built" || bad "bui
 grep -q 'src="dist/app.js"' "$W/index.html" && ok "index.html loads the bundle" || bad "index.html does not load dist/app.js"
 
 echo "Python helpers"
-for f in "$ROOT"/helpers/*; do python3 -I -m py_compile "$f" 2>/dev/null && ok "$(basename "$f") compiles" || bad "$(basename "$f") does not compile"; done; rm -rf "$ROOT/helpers/__pycache__"
+for f in "$ROOT"/helpers/scp-*; do python3 -I -m py_compile "$f" 2>/dev/null && ok "$(basename "$f") compiles" || bad "$(basename "$f") does not compile"; done; rm -rf "$ROOT/helpers/__pycache__"
 python3 -I "$ROOT/helpers/scp-audioviz" --selftest >/dev/null 2>&1 && ok "scp-audioviz --selftest" || bad "scp-audioviz --selftest"
+python3 -I "$ROOT/helpers/scp-wallpaperd" --selftest >/dev/null 2>&1 && ok "scp-wallpaperd --selftest" || bad "scp-wallpaperd --selftest"
 
 echo "Shader"
 if command -v glslangValidator >/dev/null; then

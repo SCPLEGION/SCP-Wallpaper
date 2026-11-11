@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+"""scp-wallpaperd: the one background service of the SCP wallpaper.
+
+* Runs the data producers (scp-sysstats, scp-audioviz, scp-nowplaying, next to this file) as threads; each still works
+  standalone. A producer that crashes is restarted after a pause.
+* Watches niri: an output whose active window covers it (fullscreen or maximized) gets `pause` so its page stops
+  animating. The overview un-pauses everything.
+* Takes commands from `scp-wallpaper` over a Unix socket and hands them to the pages.
+
+Pages cannot talk back (file:// page, no network), so everything goes one way through
+~/.cache/scp-center/control.json, which every page polls once a second:
+
+    {"t": ms, "pause": {"DP-2": false, "DP-3": true}, "cmds": [{"seq": 7, "screen": null, "cmd": "scene", "arg": "radar"}]}
+
+Client mode (used by bin/scp-wallpaper):  scp-wallpaperd send <cmd> [arg] [--screen NAME]   |   scp-wallpaperd state
+"""
+import importlib.machinery
+import importlib.util
+import json
+import os
+import socket
+import subprocess
+import sys
+import threading
+import time
+
+sys.dont_write_bytecode = True   # producers are loaded from extension-less files; keep helpers/ free of __pycache__
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+CACHE = os.path.expanduser("~/.cache/scp-center")
+CONTROL = os.path.join(CACHE, "control.json")
+SOCK = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "scp-wallpaperd.sock")
+PRODUCERS = ["scp-sysstats", "scp-audioviz", "scp-nowplaying"]
+COMMANDS = {"scene", "next", "prev", "reseed", "dash", "layout", "widget", "auto", "edit", "menu", "reload"}
+KEEP = 32               # commands kept in control.json; a page only runs those newer than what it saw at load
+COVER = 0.92            # a window covering this fraction of the output's width and height hides the wallpaper
+
+
+def log(*a):
+    print(*a, file=sys.stderr, flush=True)
+
+
+class Control:
+    """Owns control.json. All writes go through here, under one lock."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.pause, self.cmds, self.seq = {}, [], 0
+        try:  # continue the sequence so pages that are already open do not miss or replay anything
+            old = json.load(open(CONTROL))
+            self.cmds = old.get("cmds", [])[-KEEP:]
+            self.seq = max([c["seq"] for c in self.cmds], default=0)
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+
+    def _write(self):
+        snap = {"t": int(time.time() * 1000), "pause": self.pause, "cmds": self.cmds}
+        tmp = CONTROL + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(snap, f)
+        os.replace(tmp, CONTROL)
+
+    def set_pause(self, pause):
+        with self.lock:
+            if pause != self.pause:
+                self.pause = pause
+                self._write()
+
+    def command(self, cmd, arg=None, screen=None):
+        with self.lock:
+            self.seq += 1
+            self.cmds = (self.cmds + [{"seq": self.seq, "screen": screen, "cmd": cmd, "arg": arg}])[-KEEP:]
+            self._write()
+            return self.seq
+
+    def heartbeat(self):
+        with self.lock:
+            self._write()
+
+
+def load_producer(name):
+    loader = importlib.machinery.SourceFileLoader(name.replace("-", "_"), os.path.join(HERE, name))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    mod = importlib.util.module_from_spec(spec)
+    loader.exec_module(mod)
+    return mod
+
+
+def run_producer(name):
+    while True:
+        try:
+            load_producer(name).main()
+        except Exception as e:  # noqa: BLE001 - keep the other producers alive whatever happens
+            log(f"{name}: {type(e).__name__}: {e}; restarting in 5 s")
+        time.sleep(5)
+
+
+def niri(*args):
+    return json.loads(subprocess.run(["niri", "msg", "--json", *args], capture_output=True, text=True, timeout=5).stdout)
+
+
+def covered(outputs, workspaces, windows, overview):
+    """{output: bool}: is the wallpaper of that output hidden behind its active workspace's active window?"""
+    res = {name: False for name in outputs}
+    if overview:
+        return res
+    for ws in workspaces.values():
+        out, win = ws.get("output"), windows.get(ws.get("active_window_id"))
+        if not ws.get("is_active") or out not in outputs or not win or win.get("is_floating"):
+            continue
+        lo = outputs[out].get("logical") or {}
+        tw, th = (win.get("layout") or {}).get("tile_size") or (0, 0)
+        if lo.get("width") and tw >= lo["width"] * COVER and th >= lo["height"] * COVER:
+            res[out] = True
+    return res
+
+
+def watch_niri(ctl):
+    """Follow niri's event stream; keep a model of workspaces/windows and publish which outputs are covered."""
+    while True:
+        try:
+            outputs = niri("outputs")
+            workspaces, windows, overview = {}, {}, False
+            proc = subprocess.Popen(["niri", "msg", "--json", "event-stream"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+            for line in proc.stdout:
+                try:
+                    ev = json.loads(line)
+                except ValueError:
+                    continue
+                (kind, e), = ev.items()
+                if kind == "WorkspacesChanged":
+                    workspaces = {w["id"]: w for w in e["workspaces"]}
+                    outputs = niri("outputs")             # monitors come and go with workspace changes
+                elif kind == "WorkspaceActivated":
+                    out = workspaces.get(e["id"], {}).get("output")
+                    for w in workspaces.values():
+                        if w.get("output") == out:
+                            w["is_active"] = w["id"] == e["id"]
+                elif kind == "WorkspaceActiveWindowChanged":
+                    if e["workspace_id"] in workspaces:
+                        workspaces[e["workspace_id"]]["active_window_id"] = e["active_window_id"]
+                elif kind == "WindowsChanged":
+                    windows = {w["id"]: w for w in e["windows"]}
+                elif kind == "WindowOpenedOrChanged":
+                    windows[e["window"]["id"]] = e["window"]
+                elif kind == "WindowClosed":
+                    windows.pop(e["id"], None)
+                elif kind == "WindowLayoutsChanged":
+                    for wid, layout in e["changes"]:
+                        if wid in windows:
+                            windows[wid]["layout"] = layout
+                elif kind == "OverviewOpenedOrClosed":
+                    overview = e["is_open"]
+                else:
+                    continue
+                ctl.set_pause(covered(outputs, workspaces, windows, overview))
+            proc.wait()
+        except Exception as e:  # noqa: BLE001 - niri restarting, not running yet, ...
+            log(f"niri watch: {type(e).__name__}: {e}")
+        ctl.set_pause({})
+        time.sleep(3)
+
+
+def serve(ctl):
+    try:
+        os.unlink(SOCK)
+    except FileNotFoundError:
+        pass
+    srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    srv.bind(SOCK)
+    os.chmod(SOCK, 0o600)
+    srv.listen(4)
+    while True:
+        conn, _ = srv.accept()
+        with conn:
+            try:
+                req = json.loads(conn.makefile().readline())
+                if req.get("cmd") == "state":
+                    reply = {"ok": True, "pause": ctl.pause, "seq": ctl.seq, "threads": sorted(t.name for t in threading.enumerate())}
+                elif req.get("cmd") in COMMANDS:
+                    reply = {"ok": True, "seq": ctl.command(req["cmd"], req.get("arg"), req.get("screen"))}
+                else:
+                    reply = {"ok": False, "error": f"unknown command {req.get('cmd')!r}; known: {', '.join(sorted(COMMANDS))}"}
+            except (ValueError, OSError) as e:
+                reply = {"ok": False, "error": str(e)}
+            try:
+                conn.sendall((json.dumps(reply) + "\n").encode())
+            except OSError:
+                pass
+
+
+def selftest():
+    outs = {"A": {"logical": {"width": 2560, "height": 1440}}, "B": {"logical": {"width": 2560, "height": 1440}}}
+    ws = {1: {"id": 1, "output": "A", "is_active": True, "active_window_id": 10},
+          2: {"id": 2, "output": "B", "is_active": True, "active_window_id": 11}}
+    win = {10: {"id": 10, "is_floating": False, "layout": {"tile_size": [2510, 1390]}},     # maximized with gaps
+           11: {"id": 11, "is_floating": False, "layout": {"tile_size": [1270, 1390]}}}     # half-width column
+    assert covered(outs, ws, win, False) == {"A": True, "B": False}
+    assert covered(outs, ws, win, True) == {"A": False, "B": False}, "overview shows the wallpaper"
+    win[10]["is_floating"] = True
+    assert covered(outs, ws, win, False)["A"] is False, "floating windows never pause"
+    print("selftest ok")
+    return 0
+
+
+def client(argv):
+    if argv == ["--selftest"]:
+        return selftest()
+    if not argv or argv[0] not in ("send", "state"):
+        print(__doc__)
+        return 2
+    req = {"cmd": "state"}
+    if argv[0] == "send":
+        args, screen = argv[1:], None
+        if "--screen" in args:
+            i = args.index("--screen")
+            screen = args[i + 1] if i + 1 < len(args) else None
+            del args[i:i + 2]
+        if not args:
+            print("send <cmd> [arg] [--screen NAME]")
+            return 2
+        req = {"cmd": args[0], "arg": " ".join(args[1:]) or None, "screen": screen}
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        s.connect(SOCK)
+    except OSError:
+        print("scp-wallpaperd is not running (systemctl --user start scp-wallpaperd)", file=sys.stderr)
+        return 1
+    s.sendall((json.dumps(req) + "\n").encode())
+    reply = json.loads(s.makefile().readline())
+    print(json.dumps(reply) if argv[0] == "state" else ("ok" if reply.get("ok") else reply.get("error")))
+    return 0 if reply.get("ok") else 1
+
+
+def main():
+    os.makedirs(CACHE, exist_ok=True)
+    ctl = Control()
+    ctl.heartbeat()
+    for name in PRODUCERS:
+        threading.Thread(target=run_producer, args=(name,), name=name, daemon=True).start()
+    threading.Thread(target=watch_niri, args=(ctl,), name="niri", daemon=True).start()
+    # Pages treat a control file older than 30 s as "daemon gone" and stop honouring its pause.
+    threading.Thread(target=lambda: [ctl.heartbeat() or time.sleep(10) for _ in iter(int, 1)], name="heartbeat", daemon=True).start()
+    serve(ctl)
+
+
+if __name__ == "__main__":
+    sys.exit(client(sys.argv[1:]) if len(sys.argv) > 1 else main())

@@ -1,0 +1,34 @@
+diff --git a/modules/shared/background/WebWallpaperHost.qml b/modules/shared/background/WebWallpaperHost.qml
+index 98b1a00a..70f79b7c 100644
+--- a/modules/shared/background/WebWallpaperHost.qml
++++ b/modules/shared/background/WebWallpaperHost.qml
+@@ -22,7 +22,9 @@ Window {
+         if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(sourceArg))
+             return sourceArg
+         const localPath = sourceArg.endsWith("/") ? sourceArg + "index.html" : sourceArg
+-        return localPath.startsWith("file://") ? localPath : "file://" + localPath
++        const fileUrl = localPath.startsWith("file://") ? localPath : "file://" + localPath
++        // The page cannot tell which output it is on; per-screen commands need to know.
++        return root.screenName.length > 0 ? fileUrl + "?screen=" + encodeURIComponent(root.screenName) : fileUrl
+     }
+ 
+     // A layer surface stays on the output it was created on, and Qt picks that output from where the window sits when
+@@ -71,8 +73,18 @@ Window {
+         }
+     }
+ 
++    // Persistent per-screen profile. The default one is off-the-record, so a web
++    // wallpaper's localStorage (scene, layout, todo...) was lost on every restart.
++    WebEngineProfile {
++        id: persistentProfile
++        storageName: "inir-web-wallpaper" + (root.screenName.length > 0 ? "-" + root.screenName : "")
++        offTheRecord: false
++        persistentCookiesPolicy: WebEngineProfile.ForcePersistentCookies
++    }
++
+     WebEngineView {
+         id: web
++        profile: persistentProfile
+         anchors.fill: parent
+         url: root.sourceUrl
+         focus: root.interactive

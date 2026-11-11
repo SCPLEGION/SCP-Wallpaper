@@ -84,7 +84,7 @@ def main():
         proc = subprocess.Popen(
             ["parec", "-d", sink + ".monitor", "--format=s16le", f"--rate={RATE}", "--channels=1", "--latency-msec=30"],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        last_check = time.time()
+        last_check = last_write = time.time()
         try:
             while True:
                 raw = proc.stdout.read(HOP * 2)
@@ -100,9 +100,13 @@ def main():
                     target = np.zeros(BANDS)
                 # fast attack, slow release
                 smooth = np.where(target > smooth, smooth + (target - smooth) * .65, smooth + (target - smooth) * .18)
-                write(smooth, time.time())
+                # Silence: one write a second is enough to keep the feed fresh (30/s otherwise, for nothing).
+                quiet = smooth.max() < 1e-3
+                if not quiet or time.time() - last_write > 1:
+                    write(smooth, time.time())
+                    last_write = time.time()
                 if time.time() - last_check > 5:
-                    last_check = time.time()
+                    last_check = last_write = time.time()
                     if default_sink() != sink:      # headset/speakers switched
                         break
         finally:

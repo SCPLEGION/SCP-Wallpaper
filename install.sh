@@ -2,7 +2,7 @@
 # Install / upgrade the SCP wallpaper. Idempotent; installs nothing system-wide (only ~/.local/bin, ~/.config).
 #
 #   ./install.sh                 everything below
-#   ./install.sh --no-services   skip the two systemd --user helper services
+#   ./install.sh --no-services   skip the scp-wallpaperd systemd --user service
 #   ./install.sh --no-inir       do not touch iNiR's config.json / do not patch iNiR
 #   ./install.sh --no-claude-hud do not enable the Claude usage snapshot in the claude-hud plugin
 #   ./install.sh --uninstall     remove links and services (data and iNiR config are left alone)
@@ -19,9 +19,9 @@ say() { printf '\033[1m%s\033[0m\n' "$*"; }
 
 if [ $uninstall = 1 ]; then
   say "Removing services and links"
-  for u in scp-sysstats scp-audioviz scp-nowplaying; do systemctl --user disable --now $u.service 2>/dev/null || true; rm -f "$UNITS/$u.service"; done
+  for u in scp-wallpaperd scp-sysstats scp-audioviz scp-nowplaying; do systemctl --user disable --now $u.service 2>/dev/null || true; rm -f "$UNITS/$u.service"; done
   systemctl --user daemon-reload || true
-  rm -f "$BIN/scp-sysstats" "$BIN/scp-audioviz" "$BIN/scp-nowplaying" "$BIN/scp-wallpaper"
+  rm -f "$BIN/scp-wallpaperd" "$BIN/scp-sysstats" "$BIN/scp-audioviz" "$BIN/scp-nowplaying" "$BIN/scp-wallpaper"
   echo "Left in place: $CACHE, iNiR config, claude-hud config, iNiR patches."; exit 0
 fi
 
@@ -37,18 +37,19 @@ say "Building the page (npm ci + esbuild)"
 
 say "Linking commands into $BIN"
 mkdir -p "$BIN" "$CACHE"
-ln -sfn "$ROOT/helpers/scp-sysstats" "$BIN/scp-sysstats"
-ln -sfn "$ROOT/helpers/scp-audioviz" "$BIN/scp-audioviz"
-ln -sfn "$ROOT/helpers/scp-nowplaying" "$BIN/scp-nowplaying"
+ln -sfn "$ROOT/helpers/scp-wallpaperd" "$BIN/scp-wallpaperd"
+rm -f "$BIN/scp-sysstats" "$BIN/scp-audioviz" "$BIN/scp-nowplaying"   # merged into scp-wallpaperd
 ln -sfn "$ROOT/bin/scp-wallpaper"    "$BIN/scp-wallpaper"
 chmod +x "$ROOT"/helpers/* "$ROOT"/bin/* "$ROOT"/tools/*.sh "$ROOT"/patches/apply.sh
 
 if [ $services = 1 ]; then
-  say "Installing systemd --user services"
+  say "Installing the systemd --user service"
   mkdir -p "$UNITS"
-  for u in scp-sysstats scp-audioviz scp-nowplaying; do ln -sfn "$ROOT/systemd/$u.service" "$UNITS/$u.service"; done
+  for u in scp-sysstats scp-audioviz scp-nowplaying; do   # the three old producer services, now threads of scp-wallpaperd
+    systemctl --user disable --now $u.service 2>/dev/null || true; rm -f "$UNITS/$u.service"; done
+  ln -sfn "$ROOT/systemd/scp-wallpaperd.service" "$UNITS/scp-wallpaperd.service"
   systemctl --user daemon-reload
-  systemctl --user enable --now scp-sysstats.service scp-audioviz.service scp-nowplaying.service
+  systemctl --user enable --now scp-wallpaperd.service
 fi
 
 if [ $inir = 1 ]; then

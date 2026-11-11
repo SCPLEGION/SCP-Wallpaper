@@ -61,4 +61,4 @@ export function setPaused(on: boolean){ app.paused = on; document.body.classList
 document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); else if (!pauseLock) setPaused(false); });
 let pauseLock = false;
 /** Pause requested from outside (scp-wallpaperd); survives visibility changes until released. */
-export function lockPause(on: boolean){ pauseLock = on; setPaused(on || document.hidden); }
+export function lockPause(on: boolean){ if (on === pauseLock) return; pauseLock = on; setPaused(on || document.hidden); }
