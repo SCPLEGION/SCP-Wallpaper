@@ -1,74 +1,93 @@
 # Extending
 
-Always finish with `scp-wallpaper check` and `scp-wallpaper reload`.
+Work loop: `scp-wallpaper dev` in one terminal (rebuilds and refreshes the pages on every save), then
+`scp-wallpaper check` before committing.
 
 ## Add a scene
 
-1. Create `wallpaper/js/scenes/NN-name.js` (next free number; the number only has to sort correctly).
-2. Add `<script src="js/scenes/NN-name.js"></script>` to `index.html` **after the last scene**, before `js/app/state.js`.
-3. `scp-wallpaper preview <index>` to look at it.
+1. Create `src/scenes/NN-name.ts` and add it to the list in `src/scenes/index.ts` (list order = menu order).
+2. `scp-wallpaper preview <index>` to look at it offscreen.
 
-An SVG scene (cheap, static or CSS-animated):
+```ts
+// Name: one-line description            (first line is what `scp-wallpaper scenes` prints)
+import { W, H } from '../core/config.ts';
+import { rng, f1, svg } from '../core/util.ts';
+import type { Scene } from './types.ts';
 
-```js
-// Scene 16: Name: one-line description
-'use strict';
-
-SCENES.push({
-  name: 'Name', swatch: 'linear-gradient(#123,#456)',      // swatch = menu thumbnail (any CSS background)
-  accent: '#4fe3ff',                                        // optional: sets --accent (dashboard highlights)
-  mount(seed){                                              // return an HTML string for #stage
-    const r = rng(seed);                                    // seeded random: same seed = same picture
-    return svg(`<rect width="${W}" height="${H}" fill="#101418"/>
-                <circle cx="${f1(200 + r() * 1200)}" cy="450" r="120" fill="#fff"/>`);
+export default {
+  id: 'name',                                   // stable key in saved state and the CLI: never rename
+  name: 'Nazwa', swatch: 'linear-gradient(#123,#456)',   // menu label + thumbnail (any CSS background)
+  accent: '#4fe3ff',                            // optional: sets --accent (widget highlights)
+  mount({ el, seed }){
+    const r = rng(seed);                        // seeded random: same seed = same picture
+    el.innerHTML = svg(`<rect width="${W}" height="${H}" fill="#101418"/>
+                        <circle class="c" cx="${f1(200 + r() * 1200)}" cy="450" r="120" fill="#fff"/>`);
+    const c = el.querySelector('.c')!;
+    return {
+      tick(t, dt){ /* optional: 30 fps while visible and not covered; omit for static scenes */ },
+      destroy(){ /* optional: unsubscribe, free GL contexts */ },
+    };
   },
-  after(){ /* optional: grab DOM nodes you will animate */ },
-  tick(t, dt){ /* optional, called at 30 fps with seconds + delta; omit for static scenes */ },
-  unmount(){ /* optional: stop timers / free GL contexts */ },
-});
+} satisfies Scene;
 ```
 
-A canvas scene returns `'<canvas id="cv"></canvas>'` from `mount`, calls `cvInit(this, scale)` in `after()` (sets `this.g`,
-`this.w`, `this.h`) and draws in `tick`. Use `scale < 1` to render below native resolution; the page runs once per monitor. The 2D context is GPU-backed by default; when VRAM passes 75% `vramGuard()` (app/state.js) remounts the scene on a CPU canvas (`this.soft` is true), so do not keep the context or canvas across mounts. `#cv=cpu` / `#cv=gpu` in the URL forces a mode.
+Prefer a static or CSS-animated SVG (costs nothing per frame; CSS animations freeze with the pause). If something must
+move every frame, draw on a canvas instead of rewriting SVG attributes:
 
-Optional scene fields:
+```ts
+el.innerHTML = '<canvas id="cv"></canvas>';
+const cv = cvInit(el, .8);          // .8 = render at 80% resolution (the page runs once per monitor)
+cvSlice(cv);                        // optional: draw in the 1600×900 SVG space instead of screen pixels
+return { soft: cv.soft, tick(t){ cv.g.fillRect(...) } };
+```
 
-* `hud: true`: turns on the HUD widget skin (corner brackets, mono labels) while the scene is shown.
-* `preset: { on: ['reactor', ...], layout: { reactor: { x, y, s } } }`: gives the scene its own widget layout, created on
-  first visit (see `scenes/15-dashboard.js`). `x`,`y` are fractions of the viewport, `s` is the scale.
+Return `soft: cv.soft` from canvas scenes: the VRAM guard remounts a scene whose canvas mode no longer matches.
+For audio, `audio.on(cb, periodMs)` from `data/sources.ts` (and return its unsubscribe as `destroy`).
+
+Optional scene fields: `hud: true` (HUD widget skin), `curved: true` (widgets bend along `run.geo = {cx, cy, Rc}`,
+see `15-dashboard.ts`), `preset: { on: [...ids], layout: { id: { x, y, s } } }` (the scene's own widget layout, created
+on first visit; `x`,`y` fractions of the viewport, `s` scale).
 
 ## Add a widget
 
-1. Create `wallpaper/js/widgets/NN-name.js`; load it in `index.html` after the other widgets, before `js/app/dashboard.js`.
-2. Style it in `css/widgets.css` (sizes in `em`; the box has `font-size: 1.7vh`, so it scales with the screen).
+1. Create `src/widgets/NN-name.ts`, add it to `src/widgets/index.ts`.
+2. Style it in `wallpaper/css/widgets.css` (sizes in `em`; the box has `font-size: 1.7vh`).
 
-```js
-// Widget: name
-'use strict';
+```ts
+// Name: one-line description
+import { sys } from '../data/sources.ts';
+import type { Widget } from './types.ts';
 
-WIDGETS.push({ id: 'name', name: 'Nazwa w menu', x: .5, y: .1, on: false, cls: 'namew',  // x,y: default position, on: default visibility
-  html: () => '<div class="v">-</div>',          // markup of the content element (.wc)
-  init(el){ /* optional: bind events once; `this` is the widget */ },
-  update(now, el){ el.querySelector('.v').textContent = now.toLocaleTimeString(); },   // runs every second while visible
-});
+export default { id: 'name', name: 'Nazwa w menu', x: .5, y: .1, on: false, cls: 'namew',
+  every: 60000,                       // update period in ms (optional)
+  sources: [sys],                     // also update when these change (optional)
+  html: () => '<div class="v">-</div>',
+  init(el){ /* optional: bind events once */ },
+  update(el, now){ el.querySelector('.v')!.textContent = sys.value ? sys.value.cpu + '%' : '–'; },
+} satisfies Widget;
 ```
 
-Rules: put widget-only helpers in the widget's own file (or `widgets/helpers.js` if shared); read live data from the globals in
-`data/sources.js`; persist anything user-editable in `state` and call `save()`; never replace the *outer* box (`.w`), only `el`.
-To show it in a scene preset, add its id to that scene's `preset.on`.
+Rules: update only what changed (text, a width) instead of replacing `innerHTML`, or use `patchHtml`; use the slowest
+`every` that looks right — every CSS transition you trigger repaints at 60 fps for its duration; persist anything
+user-editable in `state` (add it to `app/model.ts` and `defaults()` in `app/migrate.ts`) and call `save()`.
 
 ## Add a data source
 
-1. A producer writes `~/.cache/scp-center/<name>.json` (atomically: write a temp file, `os.replace`). See `helpers/scp-sysstats`.
-2. Add the URL to `PATHS` in `core/config.js`, a variable and `load…()` in `data/sources.js`, and a timer in `initDash()` (`app/dashboard.js`).
-3. If it should run as a service, add `systemd/<name>.service` and the link lines to `install.sh`.
+1. A producer writes `~/.cache/scp-center/<name>.json` atomically (temp file + `os.replace`); see `helpers/scp-sysstats`.
+   Add it to `PRODUCERS` in `helpers/scp-wallpaperd` so the daemon runs it.
+2. Add the URL to `PATHS` (`core/config.ts`), a typed `Source` and a `poll(...)` line in `data/sources.ts`.
+
+## Add a CLI command
+
+Add the name to `COMMANDS` in `helpers/scp-wallpaperd`, a `case` in `src/app/commands.ts`, and the name to the
+`scene|next|...` line and the help in `bin/scp-wallpaper`.
+
+## Saved state changes
+
+Bump nothing for additive fields: `migrate()` fills missing keys from `defaults()`. Renaming or reshaping a field needs
+a migration step in `app/migrate.ts` and a case in `test/migrate.test.ts`.
 
 ## Conventions
 
-* Comments say *why*; keep scene/widget files short and self-contained.
-* No globals beyond what the load-order table lists, except a scene's/widget's own helper constants at the top of its file.
+* Comments say *why*; keep scene/widget files self-contained.
 * Polish for user-visible text (it is the UI language), English for code and docs.
-
-## Curved widget layout
-
-A scene with `curved: true` (Dashboard) sets `this.geo = {cx, cy, Rc}` every tick. `curveWidgets()` in `js/app/dashboard.js` then shifts each row of the widgets left/right of the centre so they follow that circle (`body.curved` CSS removes the boxes). Horizontal drag of a side widget therefore only changes its side; vertical position and size still matter.
