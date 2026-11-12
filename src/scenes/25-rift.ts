@@ -1,47 +1,52 @@
-// Rift: a tear in space drawing particles in, flickering edges, the picture glitching in horizontal slices
-import { rng, vnoise, hash1 } from '../core/util.ts';
-import { cvInit } from '../core/draw.ts';
-import { TAU, MONO } from './scp.ts';
-import type { Scene } from './types.ts';
+// Rift: a spatial anomaly held under observation. A dark core ringed by a bright photon ring, an accretion disc of
+// matter spiralling in (seen almost edge-on, its far side bent up over the core), containment arcs and a width readout.
+import { rng } from '../core/util.ts';
+import { deck, view, halo, rails, PRESET, TAU, MONO } from './scp.ts';
+import type { Scene, SceneRun } from './types.ts';
 
 export default {
-  id: 'rift', name: 'Anomalia', accent: '#ff4fd8', swatch: 'linear-gradient(90deg,#07020c 0 46%,#ff4fd8 49% 51%,#07020c 54%)',
+  id: 'rift', name: 'Anomalia', accent: '#ff4fd8', hud: true, curved: true, preset: PRESET,
+  swatch: 'radial-gradient(circle,#000 0 14%,#ff7be3 15% 18%,#3a0d44 19% 40%,#07030a 70%)',
   mount({ el, seed }){
-    el.innerHTML = '<canvas></canvas>';
-    const cv = cvInit(el, .7), { c, g, w, h } = cv, r = rng(seed), dpr = c.width / w;
-    const rx = w * .5, top = h * .12, bot = h * .88, fs = Math.max(11, Math.round(h * .016));
-    const spawn = () => { const a = r() * TAU, d = Math.max(w, h) * (.3 + r() * .5); return { x: rx + Math.cos(a) * d, y: h / 2 + Math.sin(a) * d * .7, v: 20 + r() * 40, s: .6 + r() * 1.6 }; };
-    const parts = Array.from({ length: 260 }, spawn);
-    const edge = (t: number, side: number) => { const pts: [number, number][] = []; for (let i = 0; i <= 40; i++){ const f = i / 40, y = top + (bot - top) * f, open = Math.sin(f * Math.PI) ** .7 * w * .035 * (1 + .25 * Math.sin(t * .7));
-      pts.push([rx + side * open + (vnoise(f * 9 + t * .6, seed + side) - .5) * w * .02, y]); } return pts; };
-    return {
-      soft: cv.soft,
-      tick(t, dt){
-        g.fillStyle = 'rgba(7,2,12,.35)'; g.fillRect(0, 0, w, h);
-        g.globalCompositeOperation = 'lighter';
+    const { g, w, h, cx, cy, R, A } = deck(el, { rgb: '255,79,216', left: 'SITE-19 · ANOMALIA PRZESTRZENNA', right: 'OBSERWACJA CIĄGŁA', bg: ['#22092a', '#0d0412', '#040106'] });
+    const r = rng(seed), N = 2400;
+    // particles on circular orbits; inner ones are hotter (whiter) and faster
+    const parts = Array.from({ length: N }, () => { const k = r(), rr = .4 + k * k * 1.15; return { rr, a: r() * TAU, sp: .55 / rr ** 1.5, y: (r() - .5) * .025 * rr, s: 1 + r() * 2 }; });
+    const col = (rr: number) => { const k = Math.min(1, (rr - .4) / 1.1); return `${255},${Math.round(225 - k * 160)},${Math.round(245 - k * 30)}`; };
+    const K = R * 1.0, core = R * .28;
+    const run: SceneRun = { soft: false, geo: null, tick };
+    function tick(t: number, dt: number){
+      g.clearRect(0, 0, w, h);
+      const P = view(cx, cy, K, 0, -.2), wob = Math.sin(t * .7) * .02;
+      halo(g, cx, cy, core, R * 1.4, A, .28);
+      // containment arcs: four field emitters, slowly sweeping
+      for (let i = 0; i < 4; i++){ const a = i * TAU / 4 + t * .1; g.strokeStyle = `rgba(${A},.35)`; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R * 1.22, a, a + .9); g.stroke(); g.lineWidth = 1;
+        const ex = cx + Math.cos(a) * R * 1.22, ey = cy + Math.sin(a) * R * 1.22; g.fillStyle = '#ffe3f8'; g.fillRect(ex - 3, ey - 3, 6, 6); }
+      const draw = (back: boolean) => {
         for (const p of parts){
-          const dx = rx - p.x, dy = h / 2 - p.y, d = Math.hypot(dx, dy) || 1;
-          // spiral in: mostly tangential far out, radial close in
-          const tx = -dy / d, ty = dx / d, k = Math.min(1, 160 / d);
-          p.x += (dx / d * (.4 + k) + tx * .9) * p.v * dt * 2; p.y += (dy / d * (.4 + k) + ty * .9) * p.v * dt * 2 * .7;
-          if (d < 12) Object.assign(p, spawn());
-          g.fillStyle = `rgba(255,${(120 + 100 * k) | 0},230,${(.25 + .6 * k).toFixed(2)})`; g.fillRect(p.x, p.y, p.s, p.s);
+          if (back) p.a += p.sp * dt;
+          const q = P(Math.cos(p.a) * p.rr, p.y + wob * p.rr, Math.sin(p.a) * p.rr); if ((q[2] < 0) !== back) continue;
+          if (!back && Math.hypot(q[0] - cx, q[1] - cy) < core && q[2] < .1) continue;
+          g.fillStyle = `rgba(${col(p.rr)},${back ? .4 : .7})`; g.fillRect(q[0] - p.s / 2, q[1] - p.s / 2, p.s, p.s * .7);
         }
-        const L = edge(t, -1), R = edge(t, 1);
-        const glow = g.createLinearGradient(rx - w * .12, 0, rx + w * .12, 0); glow.addColorStop(0, 'rgba(255,79,216,0)'); glow.addColorStop(.5, 'rgba(255,79,216,.18)'); glow.addColorStop(1, 'rgba(255,79,216,0)');
-        g.fillStyle = glow; g.fillRect(rx - w * .12, top - 40, w * .24, bot - top + 80);
-        g.globalCompositeOperation = 'source-over';
-        g.fillStyle = '#000'; g.beginPath(); L.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); for (let i = R.length - 1; i >= 0; i--) g.lineTo(R[i][0], R[i][1]); g.fill();
-        g.strokeStyle = 'rgba(255,140,235,.95)'; g.lineWidth = 2; g.shadowColor = '#ff4fd8'; g.shadowBlur = 16;
-        for (const s of [L, R]){ g.beginPath(); s.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); }
-        g.shadowBlur = 0;
-        // glitch: a few slices of the frame shifted sideways for a moment
-        const slot = Math.floor(t * 4);
-        if (hash1(slot, seed) < .18) for (let i = 0; i < 4; i++){ const y = hash1(slot * 7 + i, seed) * h, sh = 6 + hash1(slot * 3 + i, seed) * 40, off = (hash1(slot + i, seed + 2) - .5) * 60;
-          g.drawImage(c, 0, y * dpr, c.width, sh * dpr, off, y, w, sh); }
-        g.font = `${fs}px ${MONO}`; g.fillStyle = 'rgba(255,170,240,.7)'; g.textAlign = 'center';
-        g.fillText(`ANOMALIA PRZESTRZENNA · SZEROKOŚĆ ${(w * .07 * (1 + .25 * Math.sin(t * .7)) / 10).toFixed(2)} m · ZABEZPIECZANIE W TOKU`, rx, h * .95); g.textAlign = 'left';
-      },
-    };
+      };
+      g.globalCompositeOperation = 'lighter'; draw(true); g.globalCompositeOperation = 'source-over';
+      // the far side of the disc, lensed up and over the core: a bright arc above it and a faint one below
+      for (const [top, al] of [[true, .7], [false, .25]] as const){
+        const lg = g.createRadialGradient(cx, cy, core, cx, cy, core * 2); lg.addColorStop(0, `rgba(255,236,250,${al})`); lg.addColorStop(.25, `rgba(${A},${al * .55})`); lg.addColorStop(1, `rgba(${A},0)`);
+        g.save(); g.beginPath(); g.rect(cx - core * 2, top ? cy - core * 2 : cy, core * 4, core * 2); g.clip(); g.scale(1, .92); g.fillStyle = lg;
+        g.beginPath(); g.arc(cx, cy / .92, core * 2, 0, TAU); g.fill(); g.restore();
+      }
+      g.lineWidth = 1;
+      const ph = g.createRadialGradient(cx, cy, core * .92, cx, cy, core * 1.2); ph.addColorStop(0, 'rgba(255,240,252,.95)'); ph.addColorStop(.3, `rgba(${A},.5)`); ph.addColorStop(1, `rgba(${A},0)`);
+      g.fillStyle = ph; g.beginPath(); g.arc(cx, cy, core * 1.2, 0, TAU); g.fill();
+      g.fillStyle = '#000'; g.beginPath(); g.arc(cx, cy, core * .95, 0, TAU); g.fill();
+      g.globalCompositeOperation = 'lighter'; draw(false); g.globalCompositeOperation = 'source-over';
+      const wid = 10.2 + Math.sin(t * .13) * .8;
+      g.textAlign = 'center'; g.font = `600 ${Math.round(R * .085)}px ${MONO}`; g.fillStyle = `rgba(${A},.95)`; g.fillText(`SZEROKOŚĆ ${wid.toFixed(2)} m`, cx, cy - R * 1.32);
+      g.font = `11px ${MONO}`; g.fillStyle = `rgba(${A},.55)`; g.fillText(`ANOMALIA ${(seed % 900) + 100}-Ω · EMITERY 4/4 · ZABEZPIECZANIE W TOKU`, cx, cy - R * 1.2); g.textAlign = 'left';
+      run.geo = rails(g, cx, cy, R * 1.5, A);
+    }
+    return run;
   },
 } satisfies Scene;

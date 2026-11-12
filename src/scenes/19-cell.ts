@@ -1,65 +1,60 @@
-// Containment cell: blueprint of a containment chamber, an entity drifting inside, sensors tracking it
-import { rng, vnoise } from '../core/util.ts';
-import { cvInit } from '../core/draw.ts';
-import { layer, TAU, MONO, CLASSES } from './scp.ts';
-import type { Scene } from './types.ts';
+// Cell: a containment chamber as a turning 3D wireframe; thick walls, a floor grid, the entity drifting inside as
+// a glowing particle cloud, corner sensors locking onto it, and a readout hung off the nearest sensor.
+import { rng } from '../core/util.ts';
+import { deck, view, halo, rails, callout, PRESET, TAU, MONO, CLASSES } from './scp.ts';
+import type { Scene, SceneRun } from './types.ts';
+
+type V3 = [number, number, number];
+const CUBE: V3[] = [[-1, -1, -1], [1, -1, -1], [1, -1, 1], [-1, -1, 1], [-1, 1, -1], [1, 1, -1], [1, 1, 1], [-1, 1, 1]];
+const EDGES = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]];
 
 export default {
-  id: 'cell', name: 'Komora', accent: '#7fc8ff', swatch: 'linear-gradient(135deg,#0c2440,#081628)',
+  id: 'cell', name: 'Komora', accent: '#5ec8ff', hud: true, curved: true, preset: PRESET,
+  swatch: 'radial-gradient(circle,#8fdcff 0 8%,#0e2a3d 9% 40%,#03080c 70%)',
   mount({ el, seed }){
-    el.innerHTML = '<canvas></canvas>';
-    const cv = cvInit(el, .8), { g, w, h } = cv, r = rng(seed);
-    const B = '127,200,255', S = Math.min(w, h), fs = Math.max(10, Math.round(S * .016));
-    const room = { x: w * .5 - S * .3, y: h * .5 - S * .3, s: S * .6 };
-    const item = `SCP-${String(1000 + Math.floor(r() * 7000))}`, cls = CLASSES[Math.floor(r() * 3)];
-    const sensors = [[room.x, room.y], [room.x + room.s, room.y], [room.x, room.y + room.s], [room.x + room.s, room.y + room.s]];
-    const bg = layer(cv, b => {
-      b.fillStyle = '#081628'; b.fillRect(0, 0, w, h);
-      b.lineWidth = 1;
-      for (let x = 0; x < w; x += 20){ b.strokeStyle = `rgba(${B},${x % 100 ? .05 : .11})`; b.beginPath(); b.moveTo(x + .5, 0); b.lineTo(x + .5, h); b.stroke(); }
-      for (let y = 0; y < h; y += 20){ b.strokeStyle = `rgba(${B},${y % 100 ? .05 : .11})`; b.beginPath(); b.moveTo(0, y + .5); b.lineTo(w, y + .5); b.stroke(); }
-      b.strokeStyle = `rgba(${B},.8)`; b.lineWidth = 2; b.strokeRect(room.x, room.y, room.s, room.s);
-      b.lineWidth = 1; b.strokeRect(room.x - 12, room.y - 12, room.s + 24, room.s + 24);
-      // airlock + observation room
-      const ax = room.x + room.s + 12; b.strokeRect(ax, room.y + room.s * .4, room.s * .2, room.s * .2);
-      b.strokeRect(room.x - 12 - room.s * .32, room.y + room.s * .1, room.s * .32, room.s * .35);
-      b.setLineDash([6, 6]); b.beginPath(); b.moveTo(room.x - 12, room.y + room.s * .18); b.lineTo(room.x - 12, room.y + room.s * .37); b.stroke(); b.setLineDash([]);
-      // dimension line
-      b.strokeStyle = `rgba(${B},.45)`; b.beginPath(); b.moveTo(room.x, room.y + room.s + 40); b.lineTo(room.x + room.s, room.y + room.s + 40); b.moveTo(room.x, room.y + room.s + 32); b.lineTo(room.x, room.y + room.s + 48); b.moveTo(room.x + room.s, room.y + room.s + 32); b.lineTo(room.x + room.s, room.y + room.s + 48); b.stroke();
-      b.font = `${fs}px ${MONO}`; b.fillStyle = `rgba(${B},.75)`; b.textAlign = 'center';
-      b.fillText('12.00 m', room.x + room.s / 2, room.y + room.s + 60);
-      b.fillText('ŚLUZA', ax + room.s * .1, room.y + room.s * .4 - 8);
-      b.fillText('OBSERWACJA', room.x - 12 - room.s * .16, room.y + room.s * .1 - 8);
-      b.textAlign = 'left'; b.fillStyle = `rgba(${B},.9)`; b.font = `700 ${Math.round(fs * 1.6)}px ${MONO}`;
-      b.fillText(item, room.x, room.y - 34);
-      b.font = `${fs}px ${MONO}`; b.fillStyle = `rgba(${B},.6)`; b.fillText(`KLASA: ${cls} · KOMORA STANDARDOWA · ARK. 1/1`, room.x, room.y - 18);
-      for (const [sx, sy] of sensors){ b.fillStyle = `rgba(${B},.9)`; b.fillRect(sx - 4, sy - 4, 8, 8); }
-    });
-    return {
-      soft: cv.soft,
-      tick(t){
-        g.drawImage(bg, 0, 0, w, h);
-        const ex = room.x + room.s * (.15 + .7 * vnoise(t * .12, seed)), ey = room.y + room.s * (.15 + .7 * vnoise(t * .12 + 50, seed + 3));
-        // sensor sweeps: each locks on when the entity is within its cone
-        sensors.forEach(([sx, sy], i) => {
-          const base = Math.atan2(room.y + room.s / 2 - sy, room.x + room.s / 2 - sx), a = base + Math.sin(t * .6 + i * 1.7) * .7;
-          const to = Math.atan2(ey - sy, ex - sx), lock = Math.abs(((to - a + 9.42) % TAU) - 3.14) < .25;
-          g.fillStyle = `rgba(${B},${lock ? .16 : .06})`; g.beginPath(); g.moveTo(sx, sy); g.arc(sx, sy, room.s * .75, a - .25, a + .25); g.closePath(); g.fill();
-          if (lock){ g.strokeStyle = `rgba(${B},.55)`; g.setLineDash([3, 5]); g.beginPath(); g.moveTo(sx, sy); g.lineTo(ex, ey); g.stroke(); g.setLineDash([]); }
-        });
-        g.strokeStyle = `rgba(${B},.9)`; g.lineWidth = 1.5; const k = 14 + 4 * Math.sin(t * 3);
-        g.beginPath(); g.arc(ex, ey, k, 0, TAU); g.stroke(); g.beginPath(); g.moveTo(ex - k - 8, ey); g.lineTo(ex - k + 4, ey); g.moveTo(ex + k - 4, ey); g.lineTo(ex + k + 8, ey); g.moveTo(ex, ey - k - 8); g.lineTo(ex, ey - k + 4); g.moveTo(ex, ey + k - 4); g.lineTo(ex, ey + k + 8); g.stroke();
-        g.fillStyle = 'rgba(255,90,80,.9)'; g.beginPath(); g.arc(ex, ey, 4, 0, TAU); g.fill();
-        // airlock doors slide
-        const open = Math.max(0, Math.sin(t * .25)) * room.s * .08, dx = room.x + room.s;
-        g.fillStyle = '#081628'; g.fillRect(dx - 3, room.y + room.s * .42, 18, room.s * .16);
-        g.strokeStyle = `rgba(${B},.85)`; g.lineWidth = 2; g.beginPath(); g.moveTo(dx, room.y + room.s * .42); g.lineTo(dx, room.y + room.s * .5 - open); g.moveTo(dx, room.y + room.s * .5 + open); g.lineTo(dx, room.y + room.s * .58); g.stroke();
-        g.font = `${fs}px ${MONO}`; g.fillStyle = `rgba(${B},.75)`; g.textAlign = 'left';
-        const px = ((ex - room.x) / room.s * 12).toFixed(2), py = ((ey - room.y) / room.s * 12).toFixed(2);
-        g.fillText(`POZ ${px} / ${py} m`, room.x + room.s + 24, room.y + 14);
-        g.fillText(`ŚLUZA ${open > 2 ? 'OTWARTA' : 'ZAMKNIĘTA'}`, room.x + room.s + 24, room.y + 14 + fs * 1.5);
-        g.fillText(`CZUJNIKI 4/4`, room.x + room.s + 24, room.y + 14 + fs * 3);
-      },
-    };
+    const { g, w, h, cx, cy, R, A } = deck(el, { rgb: '94,200,255', left: 'SITE-19 · KOMORA 03 · STREFA KETER', right: 'IZOLACJA AKTYWNA', bg: ['#0c2231', '#06111a', '#020508'] });
+    const r = rng(seed), id = `SCP-${1000 + Math.floor(r() * 7000)}`, cls = CLASSES[1 + Math.floor(r() * 2)];
+    const cloud = Array.from({ length: 260 }, () => { const u = r() * TAU, v = Math.acos(2 * r() - 1), k = Math.cbrt(r()); return { x: Math.sin(v) * Math.cos(u) * k, y: Math.cos(v) * k, z: Math.sin(v) * Math.sin(u) * k, ph: r() * TAU }; });
+    const run: SceneRun = { soft: false, geo: null, tick };
+    function tick(t: number){
+      g.clearRect(0, 0, w, h);
+      const S = R * .46, P = view(cx, cy + R * .08, S, t * .12, -.42);
+      // floor grid, fading out from the cell
+      for (let i = -8; i <= 8; i++) for (const ax of [0, 1]){
+        const a = ax ? P(i * .25, 1, -2) : P(-2, 1, i * .25), b = ax ? P(i * .25, 1, 2) : P(2, 1, i * .25), al = .14 * (1 - Math.abs(i) / 9);
+        const gr = g.createLinearGradient(a[0], a[1], b[0], b[1]); gr.addColorStop(0, `rgba(${A},0)`); gr.addColorStop(.5, `rgba(${A},${al})`); gr.addColorStop(1, `rgba(${A},0)`);
+        g.strokeStyle = gr; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+      }
+      // entity: drifts inside, pulses
+      const ex = Math.sin(t * .37) * .35, ey = Math.sin(t * .23) * .2, ez = Math.cos(t * .29) * .35, E = P(ex, ey, ez), pr = .32 + .05 * Math.sin(t * 2.1);
+      const box = (k: number, al: number, back: boolean) => {
+        const pts = CUBE.map(v => P(v[0] * k, v[1] * k, v[2] * k));
+        for (const [a, b] of EDGES){ const p = pts[a], q = pts[b], z = (p[2] + q[2]) / 2; if ((z < 0) !== back) continue; g.strokeStyle = `rgba(${A},${back ? al * .45 : al})`; g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.stroke(); }
+        return pts;
+      };
+      box(1.18, .25, true); const inner = box(1, .7, true);
+      halo(g, E[0], E[1], 0, S * 1.1, A, .35);
+      g.fillStyle = '#e8f8ff';
+      for (const c of cloud){
+        const wob = Math.sin(t * 1.7 + c.ph) * .08, q = P(ex + (c.x + wob) * pr, ey + c.y * pr, ez + (c.z - wob) * pr);
+        const s = 1.2 + (q[2] + 1) * 1.2; g.globalAlpha = .25 + (q[2] + 1) * .3; g.fillRect(q[0] - s / 2, q[1] - s / 2, s, s);
+      }
+      g.globalAlpha = 1;
+      // sensor beams from the four top corners
+      [4, 5, 6, 7].forEach((k, i) => { const p = inner[k], on = (t * .5 + i * .25) % 1 < .7; g.strokeStyle = `rgba(${A},${on ? .5 : .12})`; g.setLineDash([3, 5]); g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(E[0], E[1]); g.stroke(); g.setLineDash([]); g.fillStyle = on ? '#dff6ff' : `rgba(${A},.5)`; g.fillRect(p[0] - 3, p[1] - 3, 6, 6); });
+      box(1, .85, false); box(1.18, .35, false);
+      // reticle on the entity
+      g.strokeStyle = `rgba(${A},.9)`; g.save(); g.translate(E[0], E[1]); g.rotate(t * .6);
+      for (let i = 0; i < 4; i++){ g.rotate(TAU / 4); g.beginPath(); g.arc(0, 0, S * .42, -.3, .3); g.stroke(); }
+      g.restore();
+      const side = 1;   // always right: the left column is taller and would cover it
+      callout(g, E[0], E[1], cx + side * R * 1.08, cy - R * .02, `${id} · ${cls}`, A);
+      g.font = `11px ${MONO}`; g.fillStyle = `rgba(${A},.6)`; g.textAlign = side > 0 ? 'left' : 'right';
+      const lx = cx + side * R * 1.08 + side * 8;
+      [`POZ ${(ex * 3).toFixed(2)} / ${(ez * 3).toFixed(2)} m`, `TEMP ${(-12 + Math.sin(t * .2) * 3).toFixed(1)} °C`, `CZUJNIKI 4/4 · ŚLUZA ZAMKNIĘTA`].forEach((s, i) => g.fillText(s, lx, cy - R * .02 + 14 + i * 15));
+      g.textAlign = 'left';
+      run.geo = rails(g, cx, cy, R * 1.5, A);
+    }
+    return run;
   },
 } satisfies Scene;
