@@ -33,8 +33,8 @@ CACHE = os.path.expanduser("~/.cache/scp-center")
 CONTROL = os.path.join(CACHE, "control.json")
 NIRI = os.path.join(CACHE, "niri.json")
 SOCK = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "scp-wallpaperd.sock")
-PRODUCERS = ["scp-sysstats", "scp-audioviz", "scp-nowplaying", "scp-desk"]
-COMMANDS = {"scene", "next", "prev", "reseed", "dash", "layout", "widget", "rate", "auto", "edit", "menu", "theme", "reload"}
+PRODUCERS = ["scp-sysstats", "scp-audioviz", "scp-nowplaying", "scp-desk", "scp-servers"]
+COMMANDS = {"scene", "next", "prev", "reseed", "dash", "layout", "widget", "rate", "auto", "edit", "menu", "theme", "reload", "menubtn", "menumode", "click"}
 KEEP = 32               # commands kept in control.json; a page only runs those newer than what it saw at load
 COVER = 0.92            # a window covering this fraction of the output's width and height hides the wallpaper
 
@@ -86,7 +86,7 @@ class Control:
 def remember(known, cmd, arg, screen):
     """Last value set through the daemon, per screen ("*" = all). Pages cannot write back, so changes
     made in the page's own menu are not seen here: this is what SCP Center last asked for."""
-    if cmd in ("scene", "dash", "theme", "auto", "layout") and arg is not None:
+    if cmd in ("scene", "dash", "theme", "auto", "layout", "menubtn", "menumode", "click") and arg is not None:
         targets = [screen] if screen else ["*"] + [k for k in known if k != "*"]
         for t in targets:
             known.setdefault(t, {})[cmd] = arg
@@ -103,19 +103,31 @@ def remember(known, cmd, arg, screen):
 
 def catalog(root=os.path.dirname(HERE)):
     """Scene/widget ids and names (menu order) and themes, read from src/ for SCP Center's wallpaper page."""
+    packs = {}
+
     def items(kind):
         out = []
         for path in sorted(glob.glob(os.path.join(root, "src", kind, "[0-9]*.ts"))):
-            m = re.search(r"id: '([^']+)', name: '([^']+)'", open(path).read())
-            if m:
-                out.append(list(m.groups()))
+            src = open(path).read()
+            sid, name = re.search(r"\bid: '([^']+)'", src), re.search(r"\bname: '([^']+)'", src)
+            if sid and name:
+                out.append([sid.group(1), name.group(1)])
+                pack = re.search(r"\bpack: '([^']+)'", src)
+                if pack:
+                    packs[sid.group(1)] = pack.group(1)
         return out
     try:
         themes = re.search(r"THEMES: Theme\[\] = \[([^\]]*)\]", open(os.path.join(root, "src", "app", "model.ts")).read())
         themes = re.findall(r"'([^']+)'", themes.group(1)) if themes else []
     except OSError:
         themes = []
-    return {"scenes": items("scenes"), "widgets": items("widgets"), "themes": themes}
+    try:
+        pack_names = re.search(r"PACKS: Record<Pack, string> = \{([^}]*)\}", open(os.path.join(root, "src", "scenes", "index.ts")).read())
+        pack_names = re.findall(r"(\w+): '([^']+)'", pack_names.group(1)) if pack_names else []
+    except OSError:
+        pack_names = []
+    scenes = items("scenes")
+    return {"scenes": scenes, "widgets": items("widgets"), "themes": themes, "packs": packs, "pack_names": [list(p) for p in pack_names]}
 
 
 def load_producer(name):

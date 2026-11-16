@@ -4,7 +4,7 @@ import { deck, view, halo, rails, PRESET, TAU, MONO } from './scp.ts';
 import type { Scene, SceneRun } from './types.ts';
 
 export default {
-  id: 'anchor', name: 'Kotwica', accent: '#b48cff', hud: true, curved: true, preset: PRESET,
+  id: 'anchor', pack: 'scp', name: 'Kotwica', accent: '#b48cff', hud: true, curved: true, preset: PRESET,
   swatch: 'radial-gradient(circle,#e0d0ff 0 6%,#3a2366 7% 30%,#0b0714 64%)',
   mount({ el }){
     const { g, w, h, cx, cy, R, A } = deck(el, { rgb: '180,140,255', left: 'SITE-19 · KOTWICA RZECZYWISTOŚCI SRA-3', right: 'POLE STABILNE', bg: ['#1d1233', '#0c0717', '#040208'] });

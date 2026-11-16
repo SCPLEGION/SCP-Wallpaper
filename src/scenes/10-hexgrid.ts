@@ -4,7 +4,7 @@ import { cvInit, rad } from '../core/draw.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'hexgrid', name: 'Heksy', accent: '#4fe3ff', swatch: 'linear-gradient(135deg,#031018,#0a4a5c)',
+  id: 'hexgrid', pack: 'tech', name: 'Heksy', accent: '#4fe3ff', swatch: 'linear-gradient(135deg,#031018,#0a4a5c)',
   mount({ el, seed }){
     el.innerHTML = '<canvas id="cv"></canvas>';
     const cv = cvInit(el, .8), { g, w, h } = cv, S = seed % 1000;

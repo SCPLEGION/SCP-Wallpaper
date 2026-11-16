@@ -4,7 +4,7 @@ import { rng, f1, svg } from '../core/util.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'circuit', name: 'Obwód', accent: '#42f5b0', swatch: 'linear-gradient(135deg,#04120f,#0e6a56)',
+  id: 'circuit', pack: 'tech', name: 'Obwód', accent: '#42f5b0', swatch: 'linear-gradient(135deg,#04120f,#0e6a56)',
   mount({ el, seed }){
     const r = rng(seed), C = '#42f5b0', G = 40;
     let s = `<defs><style>.pu{stroke-dasharray:4 96;animation:pu linear infinite}@keyframes pu{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}</style></defs><rect width="${W}" height="${H}" fill="#030e0c"/>`;

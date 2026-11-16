@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""Probe the home servers for the "Sieć" scene.
+
+Output: ~/.cache/scp-center/servers.json, rewritten every INTERVAL seconds:
+  {"t", "nodes": [{"id", "name", "kind", "parent", "host", "port", "role", "up", "ms", "since"}]}
+The node list comes from ~/.config/scp-wallpaper/servers.json ({"nodes": [...]}, same fields minus the
+live ones) or DEFAULTS. A node with "port" is up when a TCP connect succeeds, otherwise when it answers
+one ICMP ping (unprivileged, needs net.ipv4.ping_group_range). Only connects/pings, never logs in.
+"""
+import json
+import os
+import socket
+import subprocess
+import time
+from concurrent.futures import ThreadPoolExecutor
+
+INTERVAL = 15.0
+TIMEOUT = 1.5
+OUT = os.path.expanduser("~/.cache/scp-center/servers.json")
+CONFIG = os.path.expanduser("~/.config/scp-wallpaper/servers.json")
+
+# kind: net (router / internet), host (Proxmox node), ct (container on `parent`).
+# The real list lives in CONFIG; this is only a fallback so the scene shows something.
+DEFAULTS = [
+    {"id": "gw", "name": "Brama", "kind": "net", "host": "192.168.1.1", "role": "router"},
+    {"id": "wan", "name": "Internet", "kind": "net", "parent": "gw", "host": "1.1.1.1", "port": 443, "role": "DNS / HTTPS"},
+]
+
+
+def nodes():
+    try:
+        with open(CONFIG) as f:
+            return json.load(f)["nodes"]
+    except (OSError, ValueError, KeyError):
+        return DEFAULTS
+
+
+def probe(node):
+    """-> latency in ms, or None when down."""
+    t0 = time.monotonic()
+    if node.get("port"):
+        try:
+            with socket.create_connection((node["host"], int(node["port"])), timeout=TIMEOUT):
+                pass
+        except OSError:
+            return None
+        return round((time.monotonic() - t0) * 1000, 1)
+    try:
+        r = subprocess.run(["ping", "-c1", "-n", "-W", str(int(TIMEOUT + .5)), node["host"]], capture_output=True, text=True, timeout=TIMEOUT + 2)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if r.returncode != 0:
+        return None
+    for part in r.stdout.split():
+        if part.startswith("time="):
+            return round(float(part[5:]), 1)
+    return round((time.monotonic() - t0) * 1000, 1)
+
+
+def main():
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    since = {}   # id -> (up, time the state last flipped)
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        while True:
+            ns = nodes()
+            out, now = [], time.time()
+            for n, ms in zip(ns, pool.map(probe, ns)):
+                up = ms is not None
+                if since.get(n["id"], (None,))[0] != up:
+                    since[n["id"]] = (up, now)
+                out.append({**n, "up": up, "ms": ms, "since": since[n["id"]][1]})
+            tmp = OUT + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump({"t": now, "nodes": out}, f)
+            os.replace(tmp, OUT)
+            time.sleep(INTERVAL)
+
+
+if __name__ == "__main__":
+    main()

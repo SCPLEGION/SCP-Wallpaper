@@ -2,6 +2,7 @@
 // instance, which owns all per-mount state (scene objects themselves are never mutated).
 import type { Layout } from '../app/model.ts';
 
+export type Pack = 'klimat' | 'tech' | 'audio' | 'scp';
 export interface Geo { cx: number; cy: number; Rc: number }
 export interface SceneCtx { el: HTMLElement; seed: number }
 export interface SceneRun {
@@ -17,6 +18,8 @@ export interface Scene {
   id: string;
   name: string;
   swatch: string;
+  /** Pack (bundle) the scene belongs to: a key of PACKS in scenes/index.ts; groups the menus. */
+  pack: Pack;
   accent?: string;
   /** HUD skin for the widgets (body.hud). */
   hud?: boolean;

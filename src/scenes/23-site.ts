@@ -7,7 +7,7 @@ import type { Scene, SceneRun } from './types.ts';
 interface Room { x: number; z: number; w: number; d: number; id: string; h: number }
 
 export default {
-  id: 'site', name: 'Ośrodek', accent: '#36e0b8', hud: true, curved: true, preset: PRESET,
+  id: 'site', pack: 'scp', name: 'Ośrodek', accent: '#36e0b8', hud: true, curved: true, preset: PRESET,
   swatch: 'linear-gradient(135deg,#0a2a24 0 30%,#36e0b8 30% 33%,#071512 33%)',
   mount({ el, seed }){
     const { g, w, h, cx, cy, R, A } = deck(el, { rgb: '54,224,184', left: 'SITE-64 · PLAN POZIOMU -2', right: 'PATROLE AKTYWNE', bg: ['#0a2520', '#05110e', '#020605'] });

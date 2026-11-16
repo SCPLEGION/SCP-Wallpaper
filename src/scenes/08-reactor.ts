@@ -5,7 +5,7 @@ import { rad, arcPath, hexs } from '../core/draw.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'reactor', name: 'Reaktor', accent: '#4fe3ff', swatch: 'radial-gradient(circle,#4fe3ff 0 6%,#0b3a4a 7% 30%,#02090e 60%)',
+  id: 'reactor', pack: 'tech', name: 'Reaktor', accent: '#4fe3ff', swatch: 'radial-gradient(circle,#4fe3ff 0 6%,#0b3a4a 7% 30%,#02090e 60%)',
   mount({ el, seed }){
     const r = rng(seed), C = '#4fe3ff', cx = 800, cy = 450;
     let s = `<defs><radialGradient id="rbg" cx=".5" cy=".5" r=".75"><stop offset="0" stop-color="#073040"/><stop offset=".6" stop-color="#020d14"/><stop offset="1" stop-color="#010508"/></radialGradient>

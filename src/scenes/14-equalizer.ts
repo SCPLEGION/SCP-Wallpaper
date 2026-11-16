@@ -4,7 +4,7 @@ import { audio } from '../data/sources.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'equalizer', name: 'Equalizer', accent: '#7aa8ff', swatch: 'linear-gradient(90deg,#4fe3ff,#8a5cff,#ff4fa8)',
+  id: 'equalizer', pack: 'audio', name: 'Equalizer', accent: '#7aa8ff', swatch: 'linear-gradient(90deg,#4fe3ff,#8a5cff,#ff4fa8)',
   mount({ el, seed }){
     el.innerHTML = '<canvas id="cv"></canvas>';
     const cv = cvInit(el, .9), { g, w, h } = cv, S = seed % 1000, n = 72;

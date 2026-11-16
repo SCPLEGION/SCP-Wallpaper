@@ -4,7 +4,7 @@ import { rng, f1, svg } from '../core/util.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'orbits', name: 'Orbity', swatch: 'radial-gradient(circle at 60% 50%,#262a3a,#090a0f 70%)',
+  id: 'orbits', pack: 'tech', name: 'Orbity', swatch: 'radial-gradient(circle at 60% 50%,#262a3a,#090a0f 70%)',
   mount({ el, seed }){
     const r = rng(seed), cx = 760 + r() * 240, cy = 420 + r() * 80, dots: { R: number; a: number; sp: number }[] = [];
     let s = `<rect width="${W}" height="${H}" fill="#0a0b10"/><circle cx="${f1(cx)}" cy="${f1(cy)}" r="7" fill="#f3f0ea"/>`;

@@ -9,7 +9,7 @@ const CUBE: V3[] = [[-1, -1, -1], [1, -1, -1], [1, -1, 1], [-1, -1, 1], [-1, 1, 
 const EDGES = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]];
 
 export default {
-  id: 'cell', name: 'Komora', accent: '#5ec8ff', hud: true, curved: true, preset: PRESET,
+  id: 'cell', pack: 'scp', name: 'Komora', accent: '#5ec8ff', hud: true, curved: true, preset: PRESET,
   swatch: 'radial-gradient(circle,#8fdcff 0 8%,#0e2a3d 9% 40%,#03080c 70%)',
   mount({ el, seed }){
     const { g, w, h, cx, cy, R, A } = deck(el, { rgb: '94,200,255', left: 'SITE-19 · KOMORA 03 · STREFA KETER', right: 'IZOLACJA AKTYWNA', bg: ['#0c2231', '#06111a', '#020508'] });

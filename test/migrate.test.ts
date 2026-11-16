@@ -39,3 +39,14 @@ test('theme: v1 gets the scene-driven default, unknown values fall back', () => 
   assert.equal(migrate({ v: 2, theme: 'dossier' }, SC).theme, 'dossier');
   assert.equal(migrate({ v: 2, theme: 'neon' }, SC).theme, 'scene');
 });
+
+test('menu: defaults to the widget-only menu with the button shown; bad mode falls back', () => {
+  const d = migrate({ v: 2 }, SC); assert.equal(d.menuMode, 'widgets'); assert.equal(d.menuBtn, true);
+  const s = migrate({ v: 2, menuMode: 'classic', menuBtn: false }, SC); assert.equal(s.menuMode, 'classic'); assert.equal(s.menuBtn, false);
+  assert.equal(migrate({ v: 2, menuMode: 'big' }, SC).menuMode, 'widgets');
+});
+
+test('click-to-change defaults on and keeps a saved off', () => {
+  assert.equal(migrate({ v: 2 }, SC).clickNext, true);
+  assert.equal(migrate({ v: 2, clickNext: false }, SC).clickNext, false);
+});

@@ -16,6 +16,7 @@ import type { Scene } from './types.ts';
 
 export default {
   id: 'name',                                   // stable key in saved state and the CLI: never rename
+  pack: 'tech',                                 // bundle it is grouped under: a key of PACKS in scenes/index.ts
   name: 'Nazwa', swatch: 'linear-gradient(#123,#456)',   // menu label + thumbnail (any CSS background)
   accent: '#4fe3ff',                            // optional: sets --accent (widget highlights)
   mount({ el, seed }){

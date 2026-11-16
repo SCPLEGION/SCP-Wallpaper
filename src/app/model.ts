@@ -3,6 +3,7 @@ export interface Pos { x: number; y: number; s: number }
 export type Layout = Record<string, Pos>;
 export interface Cfg { layout: Layout; widgets: Record<string, boolean> }
 export type Wbg = 'none' | 'scrim' | 'glass';
+export type MenuMode = 'widgets' | 'classic';
 /** Widget/menu look. 'scene' = whatever the scene asks for (HUD on the Dashboard scene, minimal elsewhere). */
 export type Theme = 'scene' | 'minimal' | 'console' | 'dossier' | 'scipnet' | 'breach' | 'o5';
 export const THEMES: Theme[] = ['scene', 'minimal', 'console', 'dossier', 'scipnet', 'breach', 'o5'];
@@ -24,6 +25,9 @@ export interface State extends Cfg {
   h24: boolean; secs: boolean;
   dscale: number; wbg: Wbg; theme: Theme;
   tab: 'p1' | 'p2';
+  menuBtn: boolean;         // the ⋯ button in the corner (SCP Center can hide it; M still opens the menu)
+  clickNext: boolean;       // click / right click on the wallpaper = next / previous scene
+  menuMode: MenuMode;       // 'widgets' = dashboard settings only, 'classic' = the old menu with the scene tab
   todo: { t: string; done: boolean }[];
   pomo: Pomo | null;
   cd: { label: string; date: string };

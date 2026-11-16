@@ -12,7 +12,7 @@ const bump = (u: number, c: number, s: number) => Math.exp(-(((u - c) / s) ** 2)
 const ecg = (u: number) => .12 * bump(u, .18, .03) - .15 * bump(u, .30, .008) + 1 * bump(u, .32, .01) - .3 * bump(u, .345, .01) + .25 * bump(u, .55, .05);
 
 export default {
-  id: 'vitals', name: 'Biomonitor', accent: '#4dffa0', hud: true, curved: true, preset: PRESET,
+  id: 'vitals', pack: 'scp', name: 'Biomonitor', accent: '#4dffa0', hud: true, curved: true, preset: PRESET,
   swatch: 'radial-gradient(circle,#4dffa0 0 6%,#0b2b1c 7% 36%,#030806 66%)',
   mount({ el, seed }){
     const { g, w, h, cx, cy, R, A } = deck(el, { rgb: '77,255,160', left: 'SITE-19 · TEST 87 · OBIEKT D-9756', right: 'NADZÓR MEDYCZNY', bg: ['#0b2419', '#06110c', '#020504'] });

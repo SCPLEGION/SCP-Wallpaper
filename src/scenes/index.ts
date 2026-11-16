@@ -24,7 +24,19 @@ import anchor from './22-anchor.ts';
 import site from './23-site.ts';
 import scipnet from './24-scipnet.ts';
 import rift from './25-rift.ts';
-import type { Scene } from './types.ts';
+import rain from './26-rain.ts';
+import aurora from './27-aurora.ts';
+import seismo from './28-seismo.ts';
+import archive from './29-archive.ts';
+import flow from './30-flow.ts';
+import tunnel from './31-tunnel.ts';
+import pulse from './32-pulse.ts';
+import ridges from './33-ridges.ts';
+import infra from './34-infra.ts';
+import type { Pack, Scene } from './types.ts';
+
+/** Scene packs (bundles), in menu order. Every scene names one in its `pack` field. */
+export const PACKS: Record<Pack, string> = { klimat: 'Klimat', tech: 'Abstrakcja / tech', audio: 'Muzyka', scp: 'Fundacja SCP' };
 
 export const SCENES: Scene[] = [dusk, moon, waves, topo, orbits, dots, nebula, reactor, radar, hexgrid, datastream, circuit, globe, equalizer, dashboard,
-  emblem, breach, cctv, cell, redacted, vitals, anchor, site, scipnet, rift];
+  emblem, breach, cctv, cell, redacted, vitals, anchor, site, scipnet, rift, rain, aurora, seismo, archive, flow, tunnel, pulse, ridges, infra];

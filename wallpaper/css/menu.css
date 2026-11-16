@@ -34,6 +34,12 @@
   .tab { flex: 1; background: none; border: 1px solid var(--line); border-radius: 9px; color: var(--fg-dim); font: inherit; font-size: 12px; letter-spacing: .08em; padding: 8px 0; cursor: pointer; }
   .tab.active { color: var(--fg); border-color: var(--accent); }
   .pane[hidden] { display: none; }
+  /* widget-only menu (default): no tabs, the scene pane is never shown; scenes are picked in SCP Center or by clicking */
+  body:not(.menu-classic) #menu .tabs, body:not(.menu-classic) #p1 { display: none; }
+  body.menu-classic #menu .only-widgets { display: none; }
+  body.no-menubtn #menubtn { display: none; }
+  .packh { grid-column: 1 / -1; margin: 8px 0 -2px; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--fg-dim); }
+  .packh:first-child { margin-top: 0; }
   .slot-b { display: flex; gap: 6px; }
   .btn:disabled { opacity: .35; cursor: default; }
   .row.cur span { color: var(--accent); }

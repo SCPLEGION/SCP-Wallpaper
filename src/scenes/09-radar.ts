@@ -4,7 +4,7 @@ import { cvInit, rad } from '../core/draw.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'radar', name: 'Radar', accent: '#5dff9d', swatch: 'radial-gradient(circle,#0a3a22 0 20%,#03100a 21% 40%,#020a07 41%)',
+  id: 'radar', pack: 'tech', name: 'Radar', accent: '#5dff9d', swatch: 'radial-gradient(circle,#0a3a22 0 20%,#03100a 21% 40%,#020a07 41%)',
   mount({ el, seed }){
     el.innerHTML = '<canvas id="cv"></canvas>';
     const cv = cvInit(el, .8), { g, w, h } = cv, r = rng(seed);

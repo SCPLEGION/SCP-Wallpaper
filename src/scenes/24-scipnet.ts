@@ -6,7 +6,7 @@ import { deck, layer, blit, emblem, halo, PRESET, MONO, SITES, CLASSES, clock } 
 import type { Scene, SceneRun } from './types.ts';
 
 export default {
-  id: 'scipnet', name: 'SCiPNET', accent: '#ffb347', hud: true, preset: PRESET, swatch: 'linear-gradient(#140c02,#050301)',
+  id: 'scipnet', pack: 'scp', name: 'SCiPNET', accent: '#ffb347', hud: true, preset: PRESET, swatch: 'linear-gradient(#140c02,#050301)',
   mount({ el, seed }){
     const { cv, g, w, h, cx, R, A, dpr } = deck(el, { rgb: '255,179,71', left: 'SCiPNET · SECURE FOUNDATION NETWORK', right: 'POŁĄCZENIE SZYFROWANE', bg: ['#22160a', '#0f0a04', '#050301'] });
     const r = rng(seed);

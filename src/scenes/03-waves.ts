@@ -5,7 +5,7 @@ import { cvInit, cvSlice } from '../core/draw.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'waves', name: 'Fale', swatch: 'linear-gradient(#06222b,#14707a)',
+  id: 'waves', pack: 'klimat', name: 'Fale', swatch: 'linear-gradient(#06222b,#14707a)',
   mount({ el, seed }){
     const r = rng(seed), hue = 170 + Math.floor(r() * 50);
     const layers = Array.from({ length: 9 }, (_, i) => ({ base: 330 + i * 62, amp: 22 + i * 4, k: .0036 + i * .0006 + r() * .0008, sp: .22 + i * .035 + r() * .1, ph: r() * 6.28, ph2: r() * 6.28,

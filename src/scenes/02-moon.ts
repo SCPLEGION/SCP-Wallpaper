@@ -4,7 +4,7 @@ import { rng, f1, ridge, svg } from '../core/util.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'moon', name: 'Księżyc', swatch: 'linear-gradient(#050914,#142447)',
+  id: 'moon', pack: 'klimat', name: 'Księżyc', swatch: 'linear-gradient(#050914,#142447)',
   mount({ el, seed }){
     const r = rng(seed), mx = 760 + r() * 360, my = 190 + r() * 150;
     let s = `<defs><radialGradient id="bgm" cx=".7" cy=".25" r="1"><stop offset="0" stop-color="#1c2b55"/><stop offset=".6" stop-color="#0b1330"/><stop offset="1" stop-color="#04060f"/></radialGradient>

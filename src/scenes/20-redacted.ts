@@ -10,7 +10,7 @@ const WORDS = ('the object is to be kept in a standard containment locker at sit
   'indicate further research is ongoing class reassessment pending under no circumstances should').split(' ');
 
 export default {
-  id: 'redacted', name: 'Akta', accent: '#d9cfb8', hud: true, preset: PRESET, swatch: 'linear-gradient(#e9e3d5 0 30%,#17140f 30% 38%,#e9e3d5 38% 60%,#17140f 60% 66%,#e9e3d5 66%)',
+  id: 'redacted', pack: 'scp', name: 'Akta', accent: '#d9cfb8', hud: true, preset: PRESET, swatch: 'linear-gradient(#e9e3d5 0 30%,#17140f 30% 38%,#e9e3d5 38% 60%,#17140f 60% 66%,#e9e3d5 66%)',
   mount({ el, seed }){
     const { cv, g, w, h, cx, R, A, dpr } = deck(el, { rgb: '217,207,184', left: 'SCP FOUNDATION · ARCHIWUM CENTRALNE', right: 'POZIOM 4 · ŚCIŚLE TAJNE', bg: ['#3a2f1f', '#15110b', '#050403'] });
     const r = rng(seed), n = 1000 + Math.floor(r() * 7000), cls = CLASSES[Math.floor(r() * 3)];

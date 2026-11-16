@@ -4,7 +4,7 @@ import { cvInit } from '../core/draw.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'datastream', name: 'Strumień', accent: '#5dffc8', swatch: 'linear-gradient(#010806,#0b5c3f)',
+  id: 'datastream', pack: 'tech', name: 'Strumień', accent: '#5dffc8', swatch: 'linear-gradient(#010806,#0b5c3f)',
   mount({ el, seed }){
     el.innerHTML = '<canvas id="cv"></canvas>';
     const cv = cvInit(el, 1), { g, w, h } = cv, r = rng(seed), fs = 16, n = Math.ceil(w / fs), CH = '01ABCDEF<>/|=+*#:;';

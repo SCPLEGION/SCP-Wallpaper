@@ -5,7 +5,7 @@ import { deck, view, halo, rails, PRESET, TAU, MONO } from './scp.ts';
 import type { Scene, SceneRun } from './types.ts';
 
 export default {
-  id: 'rift', name: 'Anomalia', accent: '#ff4fd8', hud: true, curved: true, preset: PRESET,
+  id: 'rift', pack: 'scp', name: 'Anomalia', accent: '#ff4fd8', hud: true, curved: true, preset: PRESET,
   swatch: 'radial-gradient(circle,#000 0 14%,#ff7be3 15% 18%,#3a0d44 19% 40%,#07030a 70%)',
   mount({ el, seed }){
     const { g, w, h, cx, cy, R, A } = deck(el, { rgb: '255,79,216', left: 'SITE-19 · ANOMALIA PRZESTRZENNA', right: 'OBSERWACJA CIĄGŁA', bg: ['#22092a', '#0d0412', '#040106'] });

@@ -5,7 +5,7 @@ import { emblem, deck, sprite, halo, rails, callout, PRESET, TAU, MONO, pad2 } f
 import type { Scene, SceneRun } from './types.ts';
 
 export default {
-  id: 'breach', name: 'Naruszenie', accent: '#ff4630', hud: true, curved: true, preset: PRESET,
+  id: 'breach', pack: 'scp', name: 'Naruszenie', accent: '#ff4630', hud: true, curved: true, preset: PRESET,
   swatch: 'radial-gradient(circle,#ff5a3c 0 14%,#4a0d08 15% 42%,#0c0303 70%)',
   mount({ el, seed }){
     const { g, w, h, cx, cy, R, A, dpr } = deck(el, { rgb: '255,70,48', left: 'SITE-19 · CONTAINMENT BREACH', right: 'LOCKDOWN · LEVEL 5', bg: ['#2c0b07', '#120504', '#060202'] });

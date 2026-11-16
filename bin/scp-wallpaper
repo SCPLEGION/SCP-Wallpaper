@@ -58,11 +58,12 @@ case ${1:-help} in
   reload)  cmd_build && cmd_reload ;;
   scenes)  cmd_scenes ;;
   build)   shift; cmd_build "$@" ;;
-  scene|next|prev|reseed|dash|layout|widget|rate|auto|edit|menu|theme) send "$@" ;;
+  scene|next|prev|reseed|dash|layout|widget|rate|auto|edit|menu|theme|menubtn|menumode|click) send "$@" ;;
   refresh) shift; send reload "$@" ;;
   dev)     cmd_build --watch ;;
   check)   exec "$ROOT/tools/check.sh" ;;
   preview) shift; exec "$ROOT/tools/preview.sh" "$@" ;;
+  thumbs)  shift; exec "$ROOT/tools/thumbs.sh" "$@" ;;
   patch)   shift; exec "$ROOT/patches/apply.sh" "$@" ;;
   logs)    shift; cmd_logs "$@" ;;
   install) shift; exec "$ROOT/install.sh" "$@" ;;
@@ -77,6 +78,7 @@ scp-wallpaper <command>
   refresh           reload the pages in place (no shell restart); reload = build + restart the shell
   scenes            list scenes (index = menu order, id) and widgets
   preview N [png]   render scene N offscreen (SEED=… and a 3rd arg of hash params are supported)
+  thumbs [--force] [ID..]  scene thumbnails for SCP Center (~/.cache/scp-center/wallpaper-thumbs)
   check             syntax + index.html consistency + shader + smoke test of every scene/widget
   patch [--check]   (re)apply the local iNiR patches, e.g. after ./setup update
   logs [N]          journal of scp-wallpaperd
@@ -87,6 +89,9 @@ Page commands (via scp-wallpaperd; add --screen DP-3 to target one monitor):
   layout 1-3        load a saved layout                            widget ID on|off
   rate ID MS        widget refresh period in ms (0 = its default)
   auto MIN          auto-rotate every MIN minutes (0 = off)       theme scene|minimal|console|dossier|scipnet|breach|o5
+  click on|off      click / right click on the wallpaper changes the scene
+  menubtn on|off    the ⋯ button in the corner (M opens the menu either way)
+  menumode widgets|classic   widget settings only, or the old menu with the scene tab
   install [flags]   (re)do the installation (links, services, iNiR config, patches)
 
 Docs: $ROOT/README.md and $ROOT/docs/

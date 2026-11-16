@@ -12,7 +12,7 @@ interface City { x: number; y: number; z: number; ph: number; code: string }
 interface Orbit { rr: number; inc: number; node: number; per: number; dir: number; sats: number; ph: number }
 
 export default {
-  id: 'dashboard', name: 'Dashboard', accent: '#e8832a', hud: true, curved: true, swatch: 'radial-gradient(circle at 50% 50%,#e8832a 0 22%,#4a2a0e 23% 40%,#0b0805 41%)',
+  id: 'dashboard', pack: 'scp', name: 'Dashboard', accent: '#e8832a', hud: true, curved: true, swatch: 'radial-gradient(circle at 50% 50%,#e8832a 0 22%,#4a2a0e 23% 40%,#0b0805 41%)',
   preset: { on: ['clock', 'system', 'claude', 'calendar', 'progress'], layout: {
     clock: { x: .455, y: .925, s: .3 }, system: { x: .04, y: .30, s: .8 }, claude: { x: .04, y: .70, s: .8 }, calendar: { x: .78, y: .20, s: .8 }, progress: { x: .78, y: .60, s: .8 } } },
   mount({ el, seed }){

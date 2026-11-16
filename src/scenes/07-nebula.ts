@@ -2,7 +2,7 @@
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'nebula', name: 'Mgławica', swatch: 'linear-gradient(135deg,#2a1450,#c43c78 55%,#2aa3a8)',
+  id: 'nebula', pack: 'tech', name: 'Mgławica', swatch: 'linear-gradient(135deg,#2a1450,#c43c78 55%,#2aa3a8)',
   mount({ el, seed }){
     el.innerHTML = '<canvas id="glc"></canvas>';
     const c = el.querySelector('canvas')!, gl = c.getContext('webgl', { antialias: false, powerPreference: 'low-power' });

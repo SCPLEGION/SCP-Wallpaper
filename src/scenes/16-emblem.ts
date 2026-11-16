@@ -4,7 +4,7 @@ import { emblem, deck, sprite, view, halo, rails, PRESET, TAU, MONO } from './sc
 import type { Scene, SceneRun } from './types.ts';
 
 export default {
-  id: 'emblem', name: 'Emblemat', accent: '#cfd6df', hud: true, curved: true, preset: PRESET,
+  id: 'emblem', pack: 'scp', name: 'Emblemat', accent: '#cfd6df', hud: true, curved: true, preset: PRESET,
   swatch: 'radial-gradient(circle,#e8ecf0 0 12%,#2a2f37 13% 40%,#07080a 70%)',
   mount({ el }){
     const { g, w, h, cx, cy, R, A, dpr } = deck(el, { rgb: '207,214,223', left: 'SCP FOUNDATION · OVERWATCH COMMAND', right: 'SECURE · CONTAIN · PROTECT', bg: ['#1f242c', '#0c0e12', '#050607'] });

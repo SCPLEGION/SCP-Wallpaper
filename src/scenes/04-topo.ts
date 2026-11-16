@@ -5,7 +5,7 @@ import { cvInit, cvSlice } from '../core/draw.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'topo', name: 'Topo', swatch: 'linear-gradient(135deg,#101512,#2a3a31)',
+  id: 'topo', pack: 'tech', name: 'Topo', swatch: 'linear-gradient(135deg,#101512,#2a3a31)',
   mount({ el, seed }){
     const r = rng(seed), cx = 560 + r() * 480, cy = 380 + r() * 140;
     const ph = [0, 1, 2, 3].map(() => r() * 6.28), w = [0, 1, 2, 3].map(() => (r() - .5) * .22);

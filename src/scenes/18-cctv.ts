@@ -7,7 +7,7 @@ import type { Scene, SceneRun } from './types.ts';
 const CAMS = ['KORYTARZ B · POZIOM -2', 'KOMORA 03 · ŚLUZA', 'MAGAZYN · DOK 4', 'LABORATORIUM 2', 'KORYTARZ D · POZIOM -4'];
 
 export default {
-  id: 'cctv', name: 'Monitoring', accent: '#a6e3b4', hud: true, preset: PRESET,
+  id: 'cctv', pack: 'scp', name: 'Monitoring', accent: '#a6e3b4', hud: true, preset: PRESET,
   swatch: 'linear-gradient(135deg,#1d2620 0 48%,#0a0d0b 48% 52%,#262f29 52%)',
   mount({ el, seed }){
     const { cv, g, w, h, cx, cy, R, A, dpr } = deck(el, { rgb: '166,227,180', left: 'SITE-19 · SECURITY CONTROL', right: 'REC · 24 KAMERY', bg: ['#141b17', '#0a0d0b', '#040505'] });

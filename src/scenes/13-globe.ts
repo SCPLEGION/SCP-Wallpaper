@@ -4,7 +4,7 @@ import { cvInit, rad } from '../core/draw.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'globe', name: 'Glob', accent: '#58b8ff', swatch: 'radial-gradient(circle at 60% 50%,#1a5fa0 0 30%,#06101e 31%)',
+  id: 'globe', pack: 'tech', name: 'Glob', accent: '#58b8ff', swatch: 'radial-gradient(circle at 60% 50%,#1a5fa0 0 30%,#06101e 31%)',
   mount({ el, seed }){
     el.innerHTML = '<canvas id="cv"></canvas>';
     const cv = cvInit(el, .9), { g, w, h } = cv, r = rng(seed);

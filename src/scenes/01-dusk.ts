@@ -4,7 +4,7 @@ import { rng, f1, ridge, svg } from '../core/util.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'dusk', name: 'Zmierzch', swatch: 'linear-gradient(#2a1f4d,#a24a6a 60%,#f2a27c)',
+  id: 'dusk', pack: 'klimat', name: 'Zmierzch', swatch: 'linear-gradient(#2a1f4d,#a24a6a 60%,#f2a27c)',
   mount({ el, seed }){
     const r = rng(seed), sunX = 380 + r() * 840, hue = r();
     const sky = hue < .5 ? ['#14122e', '#4a2a5e', '#d9667a', '#f6c28b'] : ['#0e1a33', '#2d4a7a', '#e58f7b', '#f8d9a0'];

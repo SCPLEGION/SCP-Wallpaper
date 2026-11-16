@@ -21,6 +21,11 @@ export interface Desk {
 export interface NowPlaying { t: number; status: 'playing' | 'paused' | 'none'; player: string; title: string; artist: string; album: string; art?: string; position: number; length: number }
 export interface AudioFrame { t: number; b: number[] }
 export interface NiriOutput { workspaces: { idx: number; name: string | null; active: boolean; windows: number }[]; title: string; app: string }
+export interface ServerNode {
+  id: string; name: string; kind: 'net' | 'host' | 'ct' | string; parent?: string; host: string; port?: number; role?: string;
+  up: boolean; ms: number | null; since: number;
+}
+export interface Servers { t: number; nodes: ServerNode[] }
 export interface Niri { t: number; outputs: Record<string, NiriOutput> }
 
 export const sys = new Source<SysStats>();
@@ -28,6 +33,7 @@ export const desk = new Source<Desk>();
 export const np = new Source<NowPlaying>();
 export const audio = new Source<AudioFrame>();
 export const niri = new Source<Niri>();
+export const servers = new Source<Servers>();
 
 /** The last 60 CPU % and download-rate samples, for the sparklines. */
 export const hist = { cpu: [] as number[], rx: [] as number[] };
@@ -60,5 +66,6 @@ export const pollers = {
   np: poll(np, PATHS.nowplaying, 1000),
   audio: poll(audio, PATHS.audio),        // only while a scene subscribes
   niri: poll(niri, PATHS.niri, 1000),
+  servers: poll(servers, PATHS.servers),   // only while a scene subscribes
 };
 export const startSources = () => { pollers.sys.start(); pollers.desk.start(); pollers.np.start(); pollers.niri.start(); };

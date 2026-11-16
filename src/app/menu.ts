@@ -1,15 +1,23 @@
 // Menu panel, global input handlers (click / keys) and auto-rotate.
 import { $ } from '../core/util.ts';
-import { SCENES } from '../scenes/index.ts';
+import { SCENES, PACKS } from '../scenes/index.ts';
+import type { MenuMode } from './model.ts';
 import { state, save, params } from './state.ts';
 import { go, step, reseed, onSceneChange } from './stage.ts';
 import { setDash, setEdit, editing, loadSlot } from './dashboard.ts';
 
 export function setTab(id: string){
-  state.tab = id === 'p2' ? 'p2' : 'p1';
+  state.tab = id === 'p2' || state.menuMode !== 'classic' ? 'p2' : 'p1';
   document.querySelectorAll<HTMLElement>('.tab').forEach(t => t.classList.toggle('active', t.dataset.p === state.tab));
   document.querySelectorAll<HTMLElement>('.pane').forEach(p => p.hidden = p.id !== state.tab);
   save();
+}
+export function setClickNext(on: boolean){ state.clickNext = on; $('tClick').classList.toggle('on', on); save(); }
+export function setMenuBtn(on: boolean){ state.menuBtn = on; document.body.classList.toggle('no-menubtn', !on); save(); }
+export function setMenuMode(m: MenuMode){
+  state.menuMode = m; document.body.classList.toggle('menu-classic', m === 'classic');
+  $('tClassic').classList.toggle('on', m === 'classic');
+  setTab(m === 'classic' ? 'p1' : 'p2');
 }
 export const toggleMenu = (on?: boolean) => document.body.classList.toggle('menu-open', on);
 
@@ -18,12 +26,17 @@ export function armAuto(){ clearInterval(autoTimer); if (state.auto > 0) autoTim
 export function setAuto(min: number){ state.auto = min; save(); armAuto(); $<HTMLSelectElement>('auto').value = String(min); }
 
 export function initMenu(){
-  SCENES.forEach((s, i) => {
-    const b = document.createElement('button'); b.className = 'scene'; b.dataset.id = s.id;
-    b.innerHTML = `<div class="sw" style="background:${s.swatch}"></div><span class="nm">${s.name}</span>`;
-    b.addEventListener('click', e => { e.stopPropagation(); go(i); });
-    $('scenes').appendChild(b);
-  });
+  // classic menu: scenes grouped by pack, pack order as in PACKS
+  for (const [pack, label] of Object.entries(PACKS)){
+    const h = document.createElement('div'); h.className = 'packh'; h.textContent = label; $('scenes').appendChild(h);
+    SCENES.forEach((s, i) => {
+      if (s.pack !== pack) return;
+      const b = document.createElement('button'); b.className = 'scene'; b.dataset.id = s.id;
+      b.innerHTML = `<div class="sw" style="background:${s.swatch}"></div><span class="nm">${s.name}</span>`;
+      b.addEventListener('click', e => { e.stopPropagation(); go(i); });
+      $('scenes').appendChild(b);
+    });
+  }
   onSceneChange(() => document.querySelectorAll<HTMLElement>('.scene').forEach(b => b.classList.toggle('active', b.dataset.id === state.scene)));
   document.querySelectorAll<HTMLElement>('.tab').forEach(t => t.addEventListener('click', e => { e.stopPropagation(); setTab(t.dataset.p!); }));
 
@@ -35,16 +48,21 @@ export function initMenu(){
   $('menubtn').addEventListener('click', e => { e.stopPropagation(); toggleMenu(); });
   $('menu').addEventListener('click', e => e.stopPropagation());
   $('editbar').addEventListener('click', e => e.stopPropagation());
+  $('tClassic').addEventListener('click', e => { e.stopPropagation(); setMenuMode(state.menuMode === 'classic' ? 'widgets' : 'classic'); });
   if (params.has('menu')) toggleMenu(true);
+  $('tClick').addEventListener('click', e => { e.stopPropagation(); setClickNext(!state.clickNext); });
+  setClickNext(state.clickNext);
+  setMenuBtn(state.menuBtn);
+  setMenuMode(state.menuMode);
   setTab(state.tab);
 
   /* click on the wallpaper = next scene, right click = previous (disabled while arranging widgets) */
   document.addEventListener('click', () => {
     if (editing()) return;
     if (document.body.classList.contains('menu-open')){ toggleMenu(false); return; }
-    step(1);
+    if (state.clickNext) step(1);
   });
-  document.addEventListener('contextmenu', e => { e.preventDefault(); if (!editing()) step(-1); });
+  document.addEventListener('contextmenu', e => { e.preventDefault(); if (!editing() && state.clickNext) step(-1); });
   document.addEventListener('keydown', e => {
     if (/^(INPUT|SELECT|TEXTAREA)$/.test((e.target as HTMLElement).tagName)) return;
     const k = e.key.toLowerCase();

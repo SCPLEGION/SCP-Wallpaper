@@ -4,7 +4,7 @@ import { state } from './state.ts';
 import { goId, go, step, reseed } from './stage.ts';
 import { setDash, setEdit, editing, loadSlot, setWidget, isOn, setTheme, setRate } from './dashboard.ts';
 import { THEMES, type Theme } from './model.ts';
-import { setAuto, toggleMenu } from './menu.ts';
+import { setAuto, toggleMenu, setMenuBtn, setMenuMode, setClickNext } from './menu.ts';
 
 const onOff = (arg: string | null, cur: boolean) => arg === 'on' ? true : arg === 'off' ? false : !cur;
 
@@ -17,6 +17,9 @@ export function runCommand({ cmd, arg }: Cmd){
     case 'dash': setDash(onOff(arg, state.dash)); break;
     case 'edit': setEdit(onOff(arg, editing())); break;
     case 'menu': toggleMenu(onOff(arg, document.body.classList.contains('menu-open'))); break;
+    case 'click': setClickNext(onOff(arg, state.clickNext)); break;
+    case 'menubtn': setMenuBtn(onOff(arg, state.menuBtn)); break;
+    case 'menumode': setMenuMode(arg === 'classic' || (arg !== 'widgets' && state.menuMode !== 'classic') ? 'classic' : 'widgets'); break;
     case 'layout': if (arg) loadSlot(+arg - 1); break;
     case 'auto': setAuto(Math.max(0, +(arg || 0) || 0)); break;
     case 'widget': { const [id, v] = (arg || '').split(/\s+/); if (id) setWidget(id, onOff(v ?? null, isOn(id))); break; }

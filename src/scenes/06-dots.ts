@@ -5,7 +5,7 @@ import { cvInit, cvSlice } from '../core/draw.ts';
 import type { Scene } from './types.ts';
 
 export default {
-  id: 'dots', name: 'Siatka', swatch: 'radial-gradient(circle,#cfd8dc 1.5px,transparent 2px) 0 0/12px 12px,#0e0f12',
+  id: 'dots', pack: 'tech', name: 'Siatka', swatch: 'radial-gradient(circle,#cfd8dc 1.5px,transparent 2px) 0 0/12px 12px,#0e0f12',
   mount({ el, seed }){
     const r = rng(seed), cols = 40, rows = 23, sp = 40, o = [r() * 6.28, r() * 6.28];
     const hue = r() < .5 ? '207,216,220' : '241,214,184';
